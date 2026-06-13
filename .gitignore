@@ -24,6 +24,17 @@
 .DS_Store
 *.pem
 
+
+# speckit
+.specify
+
+
+# claude
+.claude
+
+# uploads
+/uploads
+
 # debug
 npm-debug.log*
 yarn-debug.log*
