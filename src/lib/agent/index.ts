@@ -141,15 +141,15 @@ async function executeTool(
 
     case "query_bid_data": {
       const question = input.question as string;
-      const topK = (input.top_k as number) ?? 5;
+      const topK = Math.min((input.top_k as number) ?? 5, 10);
       const [queryVector] = await generateEmbeddings([question]);
       const results = store.searchCsv(queryVector, topK);
-      return JSON.stringify(results);
+      return JSON.stringify(results.map(({ item, text }) => ({ item, text })));
     }
 
     case "search_plan_documents": {
       const query = input.query as string;
-      const topK = (input.top_k as number) ?? 5;
+      const topK = Math.min((input.top_k as number) ?? 5, 10);
       const [queryVector] = await generateEmbeddings([query]);
       const results = store.searchPdf(queryVector, topK);
       const formatted = results.map(

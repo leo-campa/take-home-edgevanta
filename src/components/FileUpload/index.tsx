@@ -11,6 +11,7 @@ const MAX_BYTES = 524_288_000;
 export default function FileUpload({
   onUpload,
   onError,
+  onLoadingChange,
   disabled,
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,6 +41,7 @@ export default function FileUpload({
 
     setError(null);
     setIsLoading(true);
+    onLoadingChange?.(true);
 
     try {
       const formData = new FormData();
@@ -63,6 +65,7 @@ export default function FileUpload({
       onError(msg);
     } finally {
       setIsLoading(false);
+      onLoadingChange?.(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   }

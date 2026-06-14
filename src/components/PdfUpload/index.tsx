@@ -11,6 +11,7 @@ const MAX_BYTES = 524_288_000;
 export default function PdfUpload({
   onUpload,
   onError,
+  onLoadingChange,
   disabled,
 }: PdfUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -36,13 +37,12 @@ export default function PdfUpload({
 
     const validationError = validate(file);
     if (validationError) {
-      setError(validationError);
       onError(validationError);
       return;
     }
 
-    setError(null);
     setIsLoading(true);
+    onLoadingChange?.(true);
 
     try {
       const formData = new FormData();
@@ -66,6 +66,7 @@ export default function PdfUpload({
       onError(msg);
     } finally {
       setIsLoading(false);
+      onLoadingChange?.(false);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
@@ -83,6 +84,7 @@ export default function PdfUpload({
       />
       <Button
         variant="outlined"
+        color="success"
         startIcon={
           isLoading ? <CircularProgress size={16} /> : <UploadFileIcon />
         }

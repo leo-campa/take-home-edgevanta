@@ -12,6 +12,8 @@ export default function ChatInterface() {
   const { messages, isStreaming, sendQuestion, addMessage } = useChat();
   const [dataLoaded, setDataLoaded] = useState(false);
   const [pdfLoaded, setPdfLoaded] = useState(false);
+  const [isPdfUploading, setIsPdfUploading] = useState(false);
+  const [isCsvUploading, setIsCsvUploading] = useState(false);
 
   function handleUpload(result: IngestionResult) {
     const text = dataLoaded
@@ -21,6 +23,7 @@ export default function ChatInterface() {
     addMessage({
       id: crypto.randomUUID(),
       role: "system",
+      type: "message",
       content: text,
       timestamp: Date.now(),
     });
@@ -32,6 +35,7 @@ export default function ChatInterface() {
     addMessage({
       id: crypto.randomUUID(),
       role: "system",
+      type: "message",
       content: `Upload error: ${message}`,
       timestamp: Date.now(),
     });
@@ -45,6 +49,7 @@ export default function ChatInterface() {
     addMessage({
       id: crypto.randomUUID(),
       role: "system",
+      type: "message",
       content: text,
       timestamp: Date.now(),
     });
@@ -56,6 +61,7 @@ export default function ChatInterface() {
     addMessage({
       id: crypto.randomUUID(),
       role: "system",
+      type: "message",
       content: `Upload error: ${message}`,
       timestamp: Date.now(),
     });
@@ -71,12 +77,14 @@ export default function ChatInterface() {
           <PdfUpload
             onUpload={handlePdfUpload}
             onError={handlePdfUploadError}
-            disabled={isStreaming}
+            onLoadingChange={setIsPdfUploading}
+            disabled={isStreaming || isCsvUploading}
           />
           <FileUpload
             onUpload={handleUpload}
             onError={handleUploadError}
-            disabled={isStreaming}
+            onLoadingChange={setIsCsvUploading}
+            disabled={isStreaming || isPdfUploading}
           />
         </div>
         <ChatInput onSend={sendQuestion} isStreaming={isStreaming} />

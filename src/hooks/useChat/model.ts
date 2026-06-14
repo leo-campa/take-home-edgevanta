@@ -1,6 +1,7 @@
 export type Message = {
   id: string;
   role: "user" | "agent" | "system";
+  type: "error" | "message";
   content: string;
   timestamp: number;
 };

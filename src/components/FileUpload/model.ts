@@ -9,5 +9,6 @@ export type IngestionResult = {
 export type FileUploadProps = {
   onUpload: (result: IngestionResult) => void;
   onError: (message: string) => void;
+  onLoadingChange?: (loading: boolean) => void;
   disabled?: boolean;
 };
