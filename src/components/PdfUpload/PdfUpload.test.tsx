@@ -16,13 +16,16 @@ const successResult: PdfIngestionResult = {
   warnings: [],
 };
 
-function renderComponent(
-  props: Partial<Parameters<typeof PdfUpload>[0]> = {},
-) {
+function renderComponent(props: Partial<Parameters<typeof PdfUpload>[0]> = {}) {
   const onUpload = jest.fn();
   const onError = jest.fn();
   render(
-    <PdfUpload onUpload={onUpload} onError={onError} disabled={false} {...props} />,
+    <PdfUpload
+      onUpload={onUpload}
+      onError={onError}
+      disabled={false}
+      {...props}
+    />,
   );
   return { onUpload, onError };
 }
@@ -32,7 +35,9 @@ describe("PdfUpload", () => {
 
   it("renders an Upload PDF button", () => {
     renderComponent();
-    expect(screen.getByRole("button", { name: /Upload PDF/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Upload PDF/i }),
+    ).toBeInTheDocument();
   });
 
   it("rejects non-PDF files and does not call onUpload", async () => {
@@ -40,7 +45,10 @@ describe("PdfUpload", () => {
     const input = screen.getByTestId("pdf-file-input");
     const file = new File(["data"], "data.csv", { type: "text/csv" });
 
-    Object.defineProperty(input, "files", { value: [file], configurable: true });
+    Object.defineProperty(input, "files", {
+      value: [file],
+      configurable: true,
+    });
     fireEvent.change(input);
 
     await waitFor(() =>
@@ -71,7 +79,9 @@ describe("PdfUpload", () => {
     });
 
     const input = screen.getByTestId("pdf-file-input");
-    const file = new File(["%PDF-1.4"], "plan.pdf", { type: "application/pdf" });
+    const file = new File(["%PDF-1.4"], "plan.pdf", {
+      type: "application/pdf",
+    });
 
     await userEvent.upload(input, file);
 
@@ -87,7 +97,9 @@ describe("PdfUpload", () => {
     });
 
     const input = screen.getByTestId("pdf-file-input");
-    const file = new File(["%PDF-1.4"], "plan.pdf", { type: "application/pdf" });
+    const file = new File(["%PDF-1.4"], "plan.pdf", {
+      type: "application/pdf",
+    });
     await userEvent.upload(input, file);
 
     await waitFor(() => expect(mockFetch).toHaveBeenCalled());
@@ -101,10 +113,16 @@ describe("PdfUpload", () => {
     renderComponent();
 
     let resolveUpload!: (value: unknown) => void;
-    mockFetch.mockReturnValue(new Promise((res) => { resolveUpload = res; }));
+    mockFetch.mockReturnValue(
+      new Promise((res) => {
+        resolveUpload = res;
+      }),
+    );
 
     const input = screen.getByTestId("pdf-file-input");
-    const file = new File(["%PDF-1.4"], "plan.pdf", { type: "application/pdf" });
+    const file = new File(["%PDF-1.4"], "plan.pdf", {
+      type: "application/pdf",
+    });
     await userEvent.upload(input, file);
 
     expect(screen.getByRole("button", { name: /Uploading/i })).toBeDisabled();
@@ -121,7 +139,9 @@ describe("PdfUpload", () => {
     });
 
     const input = screen.getByTestId("pdf-file-input");
-    const file = new File(["%PDF-1.4"], "plan.pdf", { type: "application/pdf" });
+    const file = new File(["%PDF-1.4"], "plan.pdf", {
+      type: "application/pdf",
+    });
     await userEvent.upload(input, file);
 
     await waitFor(() =>

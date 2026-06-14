@@ -1,4 +1,5 @@
 import type { BidItem } from "@/lib/csv-normaliser/model";
+import type { ContentChunk } from "@/lib/pdf-chunker/model";
 
 export type VectorEntry = {
   id: string;
@@ -17,7 +18,28 @@ export type DatasetMetadata = {
   warnings: string[];
 };
 
+export type PdfVectorEntry = {
+  id: string;
+  text: string;
+  vector: number[];
+  chunk: ContentChunk;
+};
+
+export type PdfDatasetMetadata = {
+  filename: string;
+  saved_path: string;
+  ingested_at: string;
+  page_count: number;
+  chunk_count: number;
+  native_pages: number;
+  vision_pages: number;
+  skipped_pages: number;
+  warnings: string[];
+};
+
 export type VectorStoreState = {
-  entries: VectorEntry[];
-  metadata: DatasetMetadata | null;
+  csvEntries: VectorEntry[];
+  csvMetadata: DatasetMetadata | null;
+  pdfEntries: PdfVectorEntry[];
+  pdfMetadata: PdfDatasetMetadata | null;
 };

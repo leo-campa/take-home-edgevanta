@@ -3,23 +3,26 @@ import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
 import Typography from "@mui/material/Typography";
 import { useRef, useState } from "react";
-import styles from "./file-upload.component.module.scss";
-import type { FileUploadProps, IngestionResult } from "./model";
+import type { PdfIngestionResult, PdfUploadProps } from "./model";
+import styles from "./pdf-upload.component.module.scss";
 
 const MAX_BYTES = 524_288_000;
 
-export default function FileUpload({
+export default function PdfUpload({
   onUpload,
   onError,
   disabled,
-}: FileUploadProps) {
+}: PdfUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function validate(file: File): string | null {
-    if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv") {
-      return "Only CSV files are accepted.";
+    if (
+      !file.name.toLowerCase().endsWith(".pdf") &&
+      file.type !== "application/pdf"
+    ) {
+      return "Only PDF files are accepted.";
     }
     if (file.size > MAX_BYTES) {
       return "File exceeds the 500 MB limit.";
@@ -45,7 +48,7 @@ export default function FileUpload({
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/api/ingest", {
+      const response = await fetch("/api/ingest-pdf", {
         method: "POST",
         body: formData,
       });
@@ -55,7 +58,7 @@ export default function FileUpload({
         throw new Error(json.error ?? `Server error ${response.status}`);
       }
 
-      const result = (await response.json()) as IngestionResult;
+      const result = (await response.json()) as PdfIngestionResult;
       onUpload(result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
@@ -68,15 +71,15 @@ export default function FileUpload({
   }
 
   return (
-    <div className={styles["file-upload-component"]}>
+    <div className={styles["pdf-upload-component"]}>
       <input
         ref={inputRef}
         type="file"
-        accept=".csv"
+        accept=".pdf"
         style={{ display: "none" }}
         onChange={handleChange}
-        aria-label="Upload CSV file"
-        data-testid="csv-file-input"
+        aria-label="Upload PDF file"
+        data-testid="pdf-file-input"
       />
       <Button
         variant="outlined"
@@ -87,18 +90,18 @@ export default function FileUpload({
         disabled={disabled || isLoading}
         className={
           isLoading
-            ? styles["file-upload-component__loading"]
-            : styles["file-upload-component__button"]
+            ? styles["pdf-upload-component__loading"]
+            : styles["pdf-upload-component__button"]
         }
         aria-busy={isLoading}
       >
-        {isLoading ? "Uploading…" : "Upload CSV"}
+        {isLoading ? "Uploading…" : "Upload PDF"}
       </Button>
       {error && (
         <Typography
           variant="caption"
           color="error"
-          className={styles["file-upload-component__error"]}
+          className={styles["pdf-upload-component__error"]}
           role="alert"
         >
           {error}

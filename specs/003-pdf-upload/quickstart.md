@@ -6,7 +6,7 @@
 
 ## Prerequisites
 
-- Node.js 20+ (no native addon compilation required — all new dependencies are pure JS)
+- Node.js ≥ 22.14.0 (no native addon compilation required — all new dependencies are pure JS)
 - `OPENAI_API_KEY` set in `.env.local` (GPT-4.1 vision fallback + embeddings)
 - `ANTHROPIC_API_KEY` set in `.env.local` (existing chat agent — unchanged)
 - Two sample PDFs for testing:

@@ -3,8 +3,8 @@
  */
 
 import type { BidItem } from "@/lib/csv-normaliser/model";
-import { getStore } from "./index";
 import type { ContentChunk } from "@/lib/pdf-chunker/model";
+import { getStore } from "./index";
 import type {
   DatasetMetadata,
   PdfDatasetMetadata,
@@ -239,7 +239,10 @@ describe("VectorStore dual-partition independence", () => {
     const store = getStore();
     store.loadCsv([makeCsvEntry("csv-0", [1, 0])], csvMeta);
     store.loadPdf([makePdfEntry("pdf-0", [0, 1])], pdfMeta);
-    store.loadPdf([makePdfEntry("pdf-1", [0, 1])], { ...pdfMeta, filename: "v2.pdf" });
+    store.loadPdf([makePdfEntry("pdf-1", [0, 1])], {
+      ...pdfMeta,
+      filename: "v2.pdf",
+    });
     expect(store.searchPdf([0, 1], 5).map((e) => e.id)).toEqual(["pdf-1"]);
     expect(store.isCsvLoaded()).toBe(true);
     expect(store.getCsvMetadata()?.filename).toBe("test.csv");

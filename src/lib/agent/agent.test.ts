@@ -92,9 +92,7 @@ describe("runAgent", () => {
     const onToken = jest.fn();
     await runAgent("What are the top items?", onToken);
     expect(mockCreate).not.toHaveBeenCalled();
-    expect(onToken).toHaveBeenCalledWith(
-      expect.stringContaining("No data"),
-    );
+    expect(onToken).toHaveBeenCalledWith(expect.stringContaining("No data"));
   });
 
   it("no-data message mentions both CSV and PDF upload options", async () => {
@@ -180,9 +178,7 @@ describe("runAgent", () => {
     await runAgent("hi", jest.fn());
 
     const firstCall = mockCreate.mock.calls[0][0];
-    const toolNames = firstCall.tools.map(
-      (t: { name: string }) => t.name,
-    );
+    const toolNames = firstCall.tools.map((t: { name: string }) => t.name);
     expect(toolNames).toContain("search_plan_documents");
   });
 
@@ -195,7 +191,7 @@ describe("runAgent", () => {
     const systemPrompt =
       typeof firstCall.system === "string"
         ? firstCall.system
-        : firstCall.messages?.[0]?.content ?? "";
+        : (firstCall.messages?.[0]?.content ?? "");
     expect(systemPrompt).toMatch(/CSV/i);
     expect(systemPrompt).toMatch(/PDF|plan/i);
   });

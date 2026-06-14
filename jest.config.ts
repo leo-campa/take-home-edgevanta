@@ -7,6 +7,8 @@ const config: Config = {
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
     "\\.scss$": "identity-obj-proxy",
+    "^react-markdown$": "<rootDir>/src/__mocks__/react-markdown.tsx",
+    "^remark-gfm$": "<rootDir>/src/__mocks__/remark-gfm.ts",
   },
   transform: {
     "^.+\\.(ts|tsx)$": [

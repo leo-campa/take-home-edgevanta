@@ -1,7 +1,7 @@
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import type { MessageBubbleProps } from "./model";
 import styles from "./message-bubble.component.module.scss";
+import type { MessageBubbleProps } from "./model";
 
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const { role, content } = message;

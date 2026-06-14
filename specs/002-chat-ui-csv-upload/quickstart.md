@@ -4,7 +4,7 @@
 
 ## Prerequisites
 
-- Node.js ≥ 18
+- Node.js ≥ 22.14.0
 - `OPENAI_API_KEY` set (for embeddings)
 - `ANTHROPIC_API_KEY` set (for Claude agent)
 - A DOT bid tabulation CSV file (the one provided with the take-home)

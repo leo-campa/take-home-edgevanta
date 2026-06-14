@@ -24,7 +24,9 @@ describe("chunkExtractedPages", () => {
   });
 
   it("falls back to a single page-level chunk when no Section: markers are present", () => {
-    const page = makePage({ text: "Sheet: D-101\n\nSome general content here." });
+    const page = makePage({
+      text: "Sheet: D-101\n\nSome general content here.",
+    });
     const chunks = chunkExtractedPages([page]);
     expect(chunks).toHaveLength(1);
     expect(chunks[0].section).toBeNull();
@@ -38,7 +40,11 @@ describe("chunkExtractedPages", () => {
 
   it("propagates extractionMethod from the page to each chunk", () => {
     const native = makePage({ page: 1, extractionMethod: "native" });
-    const vision = makePage({ page: 2, sheet: "D-102", extractionMethod: "vision" });
+    const vision = makePage({
+      page: 2,
+      sheet: "D-102",
+      extractionMethod: "vision",
+    });
     const chunks = chunkExtractedPages([native, vision]);
     expect(chunks.find((c) => c.page === 1)?.extractionMethod).toBe("native");
     expect(chunks.find((c) => c.page === 2)?.extractionMethod).toBe("vision");
@@ -93,7 +99,10 @@ describe("chunkExtractedPages", () => {
 
   it("handles multiple pages and records correct page numbers on each chunk", () => {
     const pages = [
-      makePage({ page: 1, text: "Sheet: D-101\n\nSection: Notes\n\nPage 1 content" }),
+      makePage({
+        page: 1,
+        text: "Sheet: D-101\n\nSection: Notes\n\nPage 1 content",
+      }),
       makePage({
         page: 2,
         sheet: "D-102",

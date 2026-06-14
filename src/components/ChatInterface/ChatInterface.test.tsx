@@ -101,13 +101,17 @@ describe("ChatInterface", () => {
     await userEvent.upload(input, file);
     await waitFor(() => expect(mockAddMessage).toHaveBeenCalledTimes(1));
     expect(mockAddMessage).toHaveBeenLastCalledWith(
-      expect.objectContaining({ content: expect.stringContaining("Uploaded 'new.csv'") }),
+      expect.objectContaining({
+        content: expect.stringContaining("Uploaded 'new.csv'"),
+      }),
     );
 
     await userEvent.upload(input, file);
     await waitFor(() => expect(mockAddMessage).toHaveBeenCalledTimes(2));
     expect(mockAddMessage).toHaveBeenLastCalledWith(
-      expect.objectContaining({ content: expect.stringContaining("Dataset replaced") }),
+      expect.objectContaining({
+        content: expect.stringContaining("Dataset replaced"),
+      }),
     );
   });
 
@@ -117,7 +121,9 @@ describe("ChatInterface", () => {
 
     render(<ChatInterface />);
     const input = screen.getByTestId("pdf-file-input");
-    const file = new File(["%PDF-1.4"], "plan.pdf", { type: "application/pdf" });
+    const file = new File(["%PDF-1.4"], "plan.pdf", {
+      type: "application/pdf",
+    });
     await userEvent.upload(input, file);
 
     await waitFor(() =>
@@ -135,7 +141,9 @@ describe("ChatInterface", () => {
 
     render(<ChatInterface />);
     const input = screen.getByTestId("pdf-file-input");
-    const file = new File(["%PDF-1.4"], "plan.pdf", { type: "application/pdf" });
+    const file = new File(["%PDF-1.4"], "plan.pdf", {
+      type: "application/pdf",
+    });
     await userEvent.upload(input, file);
 
     await waitFor(() =>
@@ -169,8 +177,12 @@ describe("ChatInterface", () => {
   // ─── Independent controls ────────────────────────────────────────────────────
   it("CSV and PDF upload controls are independently enabled on initial load", () => {
     render(<ChatInterface />);
-    expect(screen.getByRole("button", { name: /Upload CSV/i })).not.toBeDisabled();
-    expect(screen.getByRole("button", { name: /Upload PDF/i })).not.toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Upload CSV/i }),
+    ).not.toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /Upload PDF/i }),
+    ).not.toBeDisabled();
   });
 
   // ─── Chat interaction ────────────────────────────────────────────────────────

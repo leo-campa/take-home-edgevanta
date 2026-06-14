@@ -2,8 +2,8 @@
  * @jest-environment node
  */
 import type { NextApiRequest, NextApiResponse } from "next";
-import type { ExtractedPage } from "@/lib/pdf-extractor/model";
 import type { ContentChunk } from "@/lib/pdf-chunker/model";
+import type { ExtractedPage } from "@/lib/pdf-extractor/model";
 
 // ─── busboy mock ──────────────────────────────────────────────────────────────
 type BbCallback = (...args: unknown[]) => void;
@@ -86,7 +86,9 @@ function buildMockRes() {
   };
 }
 
-function makeExtractedPage(overrides: Partial<ExtractedPage> = {}): ExtractedPage {
+function makeExtractedPage(
+  overrides: Partial<ExtractedPage> = {},
+): ExtractedPage {
   return {
     page: 1,
     sheet: "D-101",
@@ -229,7 +231,9 @@ describe("POST /api/ingest-pdf", () => {
     triggerFileUpload("plan.pdf", "application/pdf");
     await promise;
 
-    expect(res.status).not.toHaveBeenCalledWith(expect.not.stringMatching(/200/));
+    expect(res.status).not.toHaveBeenCalledWith(
+      expect.not.stringMatching(/200/),
+    );
     expect(res.json).toHaveBeenCalledWith(
       expect.objectContaining({
         filename: "plan.pdf",
@@ -255,9 +259,7 @@ describe("POST /api/ingest-pdf", () => {
     await promise;
 
     expect(mockLoadPdf).toHaveBeenCalledWith(
-      expect.arrayContaining([
-        expect.objectContaining({ chunk: chunks[0] }),
-      ]),
+      expect.arrayContaining([expect.objectContaining({ chunk: chunks[0] })]),
       expect.objectContaining({ filename: "plan.pdf", chunk_count: 1 }),
     );
   });

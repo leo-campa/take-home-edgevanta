@@ -108,7 +108,8 @@ describe("extractPdfPages — native path", () => {
 });
 
 describe("extractPdfPages — vision fallback path", () => {
-  const visionResponse = "Sheet: D-102\n\nSection: Drainage Notes\n\nInstall 24-inch pipe.";
+  const visionResponse =
+    "Sheet: D-102\n\nSection: Drainage Notes\n\nInstall 24-inch pipe.";
 
   beforeEach(() => {
     mockGetTextContent.mockResolvedValue(makeTextContent(SHORT_TEXT));
@@ -156,7 +157,9 @@ describe("extractPdfPages — mixed pages", () => {
       .mockResolvedValueOnce(makeTextContent(LONG_TEXT))
       .mockResolvedValueOnce(makeTextContent(SHORT_TEXT));
     mockChatCreate.mockResolvedValue({
-      choices: [{ message: { content: "Sheet: D-103\n\nSection: Notes\n\nContent" } }],
+      choices: [
+        { message: { content: "Sheet: D-103\n\nSection: Notes\n\nContent" } },
+      ],
     });
 
     const pages = await extractPdfPages("/fake/file.pdf");
@@ -170,7 +173,9 @@ describe("extractPdfPages — mixed pages", () => {
 describe("extractPdfPages — skipped pages", () => {
   it("marks a page as skipped when vision also returns empty content", async () => {
     mockGetTextContent.mockResolvedValue(makeTextContent(SHORT_TEXT));
-    mockChatCreate.mockResolvedValue({ choices: [{ message: { content: "" } }] });
+    mockChatCreate.mockResolvedValue({
+      choices: [{ message: { content: "" } }],
+    });
 
     const pages = await extractPdfPages("/fake/file.pdf");
     expect(pages[0].skipped).toBe(true);
@@ -191,7 +196,9 @@ describe("extractPdfPages — skipped pages", () => {
     mockGetTextContent
       .mockResolvedValueOnce(makeTextContent(SHORT_TEXT))
       .mockResolvedValueOnce(makeTextContent(LONG_TEXT));
-    mockChatCreate.mockResolvedValue({ choices: [{ message: { content: "" } }] });
+    mockChatCreate.mockResolvedValue({
+      choices: [{ message: { content: "" } }],
+    });
 
     const pages = await extractPdfPages("/fake/file.pdf");
     expect(pages).toHaveLength(2);

@@ -5,6 +5,7 @@ import {
   getTopExpensiveItems,
   summarizeQuantities,
 } from "@/lib/analytics";
+import { generateEmbeddings } from "@/lib/embeddings";
 import { getStore } from "@/lib/vector-store";
 
 const MODEL = "claude-sonnet-4-6";
@@ -74,14 +75,44 @@ const TOOLS: Anthropic.Tool[] = [
       required: ["question"],
     },
   },
+  {
+    name: "search_plan_documents",
+    description:
+      "Performs semantic search over uploaded construction plan documents (PDFs). Returns the most relevant sections including sheet numbers, notes, specifications, and quantities. Use this when the user asks about plan requirements, specifications, notes, quantities, or drawing details.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        query: {
+          type: "string",
+          description: "Natural language search query",
+        },
+        top_k: {
+          type: "number",
+          description: "Number of results to return (default: 5)",
+        },
+      },
+      required: ["query"],
+    },
+  },
 ];
 
-const SYSTEM_PROMPT = `You are an expert construction bid analyst. You have access to tools that query structured bid data and semantic embeddings. Use the appropriate tool based on the user's intent:
-- Analytical questions (totals, rankings, outliers, averages) → structured tools
-- Semantic questions (descriptions, categories, related work) → query_bid_data
-Provide clear, concise answers based on the data returned by the tools. Format numbers with commas and currency symbols where appropriate.`;
+const SYSTEM_PROMPT = `You are an expert construction estimator assistant with access to two data sources:
 
-function executeTool(name: string, input: Record<string, unknown>): string {
+1. CSV Bid Data (structured): Contains bid items with quantities, unit prices, and totals.
+   - Use get_top_expensive_items, detect_price_outliers, summarize_quantities, get_average_unit_price for analytical questions
+   - Use query_bid_data for semantic search over bid item descriptions
+
+2. Plan Documents (unstructured): Extracted text from construction plan-set PDFs, including sheet notes, specifications, quantities, and requirements.
+   - Use search_plan_documents for any question about the plan content
+
+When both sources are available, use tools from both to give a complete, cross-referenced answer.
+Always cite the source in your response (e.g., "According to Sheet D-101..." or "From the bid data...").
+Format numbers with commas and currency symbols where appropriate.`;
+
+async function executeTool(
+  name: string,
+  input: Record<string, unknown>,
+): Promise<string> {
   const store = getStore();
   const items = store.getItems();
 
@@ -109,11 +140,23 @@ function executeTool(name: string, input: Record<string, unknown>): string {
     }
 
     case "query_bid_data": {
-      return JSON.stringify({
-        message:
-          "Semantic search requires embedding the query. Using top results from store.",
-        items: store.getTopByTotalCost((input.top_k as number) ?? 5),
-      });
+      const question = input.question as string;
+      const topK = (input.top_k as number) ?? 5;
+      const [queryVector] = await generateEmbeddings([question]);
+      const results = store.searchCsv(queryVector, topK);
+      return JSON.stringify(results);
+    }
+
+    case "search_plan_documents": {
+      const query = input.query as string;
+      const topK = (input.top_k as number) ?? 5;
+      const [queryVector] = await generateEmbeddings([query]);
+      const results = store.searchPdf(queryVector, topK);
+      const formatted = results.map(
+        (entry) =>
+          `[Page ${entry.chunk.page} — Sheet: ${entry.chunk.sheet ?? "UNKNOWN"} — Section: ${entry.chunk.section ?? "General Content"}]\n${entry.chunk.text}`,
+      );
+      return JSON.stringify(formatted);
     }
 
     default:
@@ -128,7 +171,9 @@ export async function runAgent(
   const store = getStore();
 
   if (store.isEmpty()) {
-    onToken("No bid data loaded. Please upload a CSV file first.");
+    onToken(
+      "No data has been loaded. Please upload a CSV file (bid data) or a PDF (plan documents), or both.",
+    );
     return;
   }
 
@@ -154,7 +199,7 @@ export async function runAgent(
 
       for (const block of response.content) {
         if (block.type === "tool_use") {
-          const result = executeTool(
+          const result = await executeTool(
             block.name,
             block.input as Record<string, unknown>,
           );

@@ -3,8 +3,8 @@ import CircularProgress from "@mui/material/CircularProgress";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import { useState } from "react";
-import type { ChatInputProps } from "./model";
 import styles from "./chat-input.component.module.scss";
+import type { ChatInputProps } from "./model";
 
 export default function ChatInput({
   onSend,
