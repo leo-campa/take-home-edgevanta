@@ -6,6 +6,7 @@ function makeMessage(overrides: Partial<Message> = {}): Message {
   return {
     id: "1",
     role: "user",
+    type: "message",
     content: "Hello",
     timestamp: Date.now(),
     ...overrides,

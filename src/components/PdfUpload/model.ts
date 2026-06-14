@@ -1,6 +1,7 @@
 export type PdfUploadProps = {
   onUpload: (result: PdfIngestionResult) => void;
   onError: (message: string) => void;
+  onLoadingChange?: (loading: boolean) => void;
   disabled: boolean;
 };
 

@@ -23,6 +23,7 @@ export function useChat(): ChatState & {
       const userMessage: Message = {
         id: makeId(),
         role: "user",
+        type: "message",
         content: question,
         timestamp: Date.now(),
       };
@@ -31,6 +32,7 @@ export function useChat(): ChatState & {
       const agentMessage: Message = {
         id: agentId,
         role: "agent",
+        type: "message",
         content: "",
         timestamp: Date.now(),
       };
@@ -79,7 +81,7 @@ export function useChat(): ChatState & {
               setMessages((prev) =>
                 prev.map((m) =>
                   m.id === agentId
-                    ? { ...m, content: `Error: ${event.message}` }
+                    ? { ...m, type: "error" as const, content: `Error: ${event.message}` }
                     : m,
                 ),
               );

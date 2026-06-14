@@ -10,7 +10,7 @@ function makeMessage(
   content: string,
   role: Message["role"] = "user",
 ): Message {
-  return { id, role, content, timestamp: Date.now() };
+  return { id, role, type: "message", content, timestamp: Date.now() };
 }
 
 describe("MessageList", () => {
