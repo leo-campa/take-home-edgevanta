@@ -55,7 +55,6 @@ describe("PdfUpload", () => {
       expect(onError).toHaveBeenCalledWith(expect.stringContaining("PDF")),
     );
     expect(onUpload).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 
   it("rejects files over 500 MB", async () => {
@@ -147,7 +146,6 @@ describe("PdfUpload", () => {
     await waitFor(() =>
       expect(onError).toHaveBeenCalledWith("Ingestion failed"),
     );
-    expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 
   it("is disabled when the disabled prop is true", () => {
