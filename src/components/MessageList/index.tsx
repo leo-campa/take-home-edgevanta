@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import MessageBubble from "@/components/MessageBubble";
-import type { MessageListProps } from "./model";
 import styles from "./message-list.component.module.scss";
+import type { MessageListProps } from "./model";
 
 export default function MessageList({ messages }: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);

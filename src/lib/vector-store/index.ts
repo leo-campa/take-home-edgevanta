@@ -1,40 +1,75 @@
 import type { OutlierResult, QuantitySummary } from "@/lib/analytics/model";
 import type { BidItem } from "@/lib/csv-normaliser/model";
-import type { DatasetMetadata, VectorEntry, VectorStoreState } from "./model";
+import type {
+  DatasetMetadata,
+  PdfDatasetMetadata,
+  PdfVectorEntry,
+  VectorEntry,
+  VectorStoreState,
+} from "./model";
 
 class VectorStore {
-  private state: VectorStoreState = { entries: [], metadata: null };
+  private state: VectorStoreState = {
+    csvEntries: [],
+    csvMetadata: null,
+    pdfEntries: [],
+    pdfMetadata: null,
+  };
 
-  load(entries: VectorEntry[], metadata: DatasetMetadata): void {
-    this.state = { entries, metadata };
+  loadCsv(entries: VectorEntry[], metadata: DatasetMetadata): void {
+    this.state = { ...this.state, csvEntries: entries, csvMetadata: metadata };
+  }
+
+  loadPdf(entries: PdfVectorEntry[], metadata: PdfDatasetMetadata): void {
+    this.state = { ...this.state, pdfEntries: entries, pdfMetadata: metadata };
+  }
+
+  isCsvLoaded(): boolean {
+    return this.state.csvEntries.length > 0;
+  }
+
+  isPdfLoaded(): boolean {
+    return this.state.pdfEntries.length > 0;
   }
 
   isEmpty(): boolean {
-    return this.state.entries.length === 0;
+    return !this.isCsvLoaded() && !this.isPdfLoaded();
   }
 
-  getMetadata(): DatasetMetadata | null {
-    return this.state.metadata;
+  getCsvMetadata(): DatasetMetadata | null {
+    return this.state.csvMetadata;
+  }
+
+  getPdfMetadata(): PdfDatasetMetadata | null {
+    return this.state.pdfMetadata;
   }
 
   getItems(): BidItem[] {
-    return this.state.entries.map((e) => e.item);
+    return this.state.csvEntries.map((e) => e.item);
   }
 
-  search(queryVector: number[], topK = 5): VectorEntry[] {
-    if (this.state.entries.length === 0) return [];
-
-    const scored = this.state.entries.map((entry) => ({
+  searchCsv(queryVector: number[], topK = 5): VectorEntry[] {
+    if (this.state.csvEntries.length === 0) return [];
+    const scored = this.state.csvEntries.map((entry) => ({
       entry,
       score: dotProduct(entry.vector, queryVector),
     }));
+    scored.sort((a, b) => b.score - a.score);
+    return scored.slice(0, topK).map((s) => s.entry);
+  }
 
+  searchPdf(queryVector: number[], topK = 5): PdfVectorEntry[] {
+    if (this.state.pdfEntries.length === 0) return [];
+    const scored = this.state.pdfEntries.map((entry) => ({
+      entry,
+      score: dotProduct(entry.vector, queryVector),
+    }));
     scored.sort((a, b) => b.score - a.score);
     return scored.slice(0, topK).map((s) => s.entry);
   }
 
   getTopByTotalCost(n: number): BidItem[] {
-    return [...this.state.entries]
+    return [...this.state.csvEntries]
       .filter((e) => e.item.total_cost !== null)
       .sort(
         (a, b) => (b.item.total_cost as number) - (a.item.total_cost as number),

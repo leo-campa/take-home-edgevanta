@@ -123,7 +123,7 @@ export default async function handler(
   try {
     vectors = await generateEmbeddings(texts);
   } catch (err) {
-    getStore().load([], {
+    getStore().loadCsv([], {
       filename: originalFilename,
       saved_path: savedPath,
       ingested_at: new Date().toISOString(),
@@ -153,7 +153,7 @@ export default async function handler(
     warnings,
   };
 
-  getStore().load(entries, metadata);
+  getStore().loadCsv(entries, metadata);
 
   const result: IngestionResult = {
     filename: originalFilename,
