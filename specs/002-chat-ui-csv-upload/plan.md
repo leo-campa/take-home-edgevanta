@@ -74,7 +74,8 @@ main
     │                                           (SSE client hook + input component)
     │
     └── feature/csv-flow/chat-interface      ← components/ChatInterface/ + MessageList/
-                                                + MessageBubble/ + pages/index.tsx
+                                                + MessageBubble/ + pages/chat/index.tsx
+                                                + pages/index.tsx (redirect → /chat)
                                                 (depends on: chat-input, file-upload)
 ```
 
@@ -116,7 +117,9 @@ specs/002-chat-ui-csv-upload/
 ```text
 src/
 ├── pages/
-│   ├── index.tsx                             # Chat page — mounts <ChatInterface />
+│   ├── index.tsx                             # Redirects to /chat (getServerSideProps)
+│   ├── chat/
+│   │   └── index.tsx                         # Chat page — mounts <ChatInterface />
 │   ├── _app.tsx                              # (existing) — add MUI ThemeProvider + CssBaseline
 │   ├── _document.tsx                         # (existing)
 │   └── api/

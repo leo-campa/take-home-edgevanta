@@ -1,40 +1,73 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# Construction Bid Estimating Agent
 
-## Getting Started
+A chat interface for querying construction bid data using natural language. Upload a CSV bid tabulation, and ask questions like "What are the top 5 most expensive items?" or "Show me drainage-related work."
 
-First, run the development server:
+## Setup
 
 ```bash
+git clone <repo-url>
+cd take-home-edgevanta
+npm install
+cp .env.example .env.local
+# Add your API keys to .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | Yes | Used for `text-embedding-3-small` embeddings |
+| `ANTHROPIC_API_KEY` | Yes | Used for Claude agent (`claude-sonnet-4-6`) |
+| `UPLOAD_DIR` | No | Directory for saved CSVs (default: `./uploads`) |
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Click **Upload CSV** and select a bid tabulation file (up to 500 MB)
+2. Wait for the confirmation message showing the number of items ingested
+3. Type a question in the chat input and press Enter or click Send
 
-## Learn More
+## Commands
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npm run dev        # Start development server
+npm test           # Run all tests
+npm run test:watch # Run tests in watch mode
+npm run lint       # Lint with Biome
+npm run build      # Production build
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+## Architecture
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+| Layer | Technology | Purpose |
+|-------|------------|---------|
+| Frontend | Next.js 16 (Pages Router) + MUI | Chat UI, file upload |
+| Streaming | SSE via `POST /api/chat` | Token-by-token agent responses |
+| CSV parsing | PapaParse + custom normaliser | Column normalisation, canonical field detection |
+| Embeddings | OpenAI `text-embedding-3-small` | 1536-dim L2-normalised vectors |
+| Vector store | In-memory singleton (`globalThis`) | Dot-product cosine similarity |
+| Agent | Anthropic `claude-sonnet-4-6` | Orchestrates analytics vs semantic search |
+| Analytics | Deterministic functions | Top items, outliers, quantity summaries |
 
-## Deploy on Vercel
+### Branch Strategy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+feature/csv-flow/specs          → spec artifacts
+feature/csv-flow/setup          → dependencies, config, models
+feature/csv-flow/csv-parser     → CSV normaliser + bid formatter
+feature/csv-flow/openai-embeddings → embeddings + vector store
+feature/csv-flow/ingest-api     → POST /api/ingest
+feature/csv-flow/agent          → Claude agent + POST /api/chat (SSE)
+feature/csv-flow/chat-input     → useChat hook + UI components
+feature/csv-flow/chat-interface → ChatInterface + page
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+### Key Design Decisions
+
+- **SSE over WebSocket**: `POST /api/chat` returns `text/event-stream`, no custom server required
+- **In-memory vector store**: Simple dot-product on L2-normalised vectors; swap by changing `src/lib/vector-store/index.ts`
+- **Deterministic analytics**: Top items, outliers, and summaries computed directly on `BidItem[]`, not via LLM
+- **Column normalisation**: `trim → camelCase split → whitespace→_ → toLowerCase`
+- **No shared types folder**: Each module owns its types in a co-located `model.ts`

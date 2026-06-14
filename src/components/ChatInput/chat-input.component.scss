@@ -1,0 +1,20 @@
+.chat-input-component {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: var(--spacing-sm, 8px);
+  background: var(--color-surface, #fff);
+  border-top: 1px solid var(--color-border, #e0e0e0);
+
+  &__text-field {
+    flex: 1;
+  }
+
+  &__send-button {
+    flex-shrink: 0;
+  }
+
+  &__spinner {
+    color: inherit;
+  }
+}
