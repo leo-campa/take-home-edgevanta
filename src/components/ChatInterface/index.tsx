@@ -64,7 +64,7 @@ export default function ChatInterface() {
   return (
     <div className={styles["chat-interface-component"]}>
       <div className={styles["chat-interface-component__message-area"]}>
-        <MessageList messages={messages} />
+        <MessageList messages={messages} isStreaming={isStreaming} />
       </div>
       <div className={styles["chat-interface-component__input-row"]}>
         <div className={styles["chat-interface-component__upload-section"]}>

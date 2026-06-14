@@ -94,16 +94,6 @@ export default function FileUpload({
       >
         {isLoading ? "Uploading…" : "Upload CSV"}
       </Button>
-      {error && (
-        <Typography
-          variant="caption"
-          color="error"
-          className={styles["file-upload-component__error"]}
-          role="alert"
-        >
-          {error}
-        </Typography>
-      )}
     </div>
   );
 }

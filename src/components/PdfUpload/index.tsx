@@ -97,16 +97,6 @@ export default function PdfUpload({
       >
         {isLoading ? "Uploading…" : "Upload PDF"}
       </Button>
-      {error && (
-        <Typography
-          variant="caption"
-          color="error"
-          className={styles["pdf-upload-component__error"]}
-          role="alert"
-        >
-          {error}
-        </Typography>
-      )}
     </div>
   );
 }
