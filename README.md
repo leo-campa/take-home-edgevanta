@@ -1,5 +1,9 @@
 # Construction Bid Estimating Agent
 
+## Requirements
+
+- Node.js >= 20.9.0
+
 ## Setup
 
 ```bash
