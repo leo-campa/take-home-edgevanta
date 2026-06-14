@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- Node.js >= 20.9.0
+- Node.js >= 22.14.0
 
 ## Setup
 
