@@ -401,15 +401,24 @@ type PdfIngestionResult = {
 
 ## Testing Summary
 
-| Module / Route | Test focus |
-|---------------|-----------|
-| `lib/pdf-extractor` | Native path (≥200 chars); GPT-4.1 fallback (<200 chars); mixed page; skipped page; `extractionMethod` propagation; section/sheet parsing; GPT-4.1 error → skipped warning |
-| `lib/pdf-chunker` | Section splits; page fallback; long-chunk split; empty skip; `extractionMethod` on chunks; UUID assignment |
-| `lib/vector-store` | Renamed methods; dual-partition coexistence; `loadPdf` / `loadCsv` independence; `searchPdf`; state flags |
-| `lib/agent` | `search_plan_documents` routing; `query_bid_data` embedding fix; combined system prompt; updated no-data message |
-| `api/ingest-pdf` | 200 happy path; 400 no-file; 400 wrong type; 413 oversized; 422 all-empty; 500 embedding failure; `native_pages`/`vision_pages` counts |
-| `components/PdfUpload` | Renders; non-PDF rejection; size rejection; loading state; `onUpload`; `onError` |
-| `components/ChatInterface` | PdfUpload above FileUpload in DOM; upload/replace messages; independent disabled state |
+Follows the same Jest + React Testing Library patterns established by the CSV flow. Every new module folder includes a co-located `.test.ts` / `.test.tsx`. All test files are written and committed before implementation begins (TDD).
+
+| Module / Route | Test file | Test focus |
+|---------------|-----------|-----------|
+| `lib/pdf-extractor` | `pdf-extractor.test.ts` | Native path (≥200 chars); GPT-4.1 fallback (<200 chars); mixed page; skipped page; `extractionMethod` propagation; section/sheet parsing; GPT-4.1 error → skipped warning. Mocks: `pdfjs-dist`, `pdf-lib`, `openai`, `node:fs`. |
+| `lib/pdf-chunker` | `pdf-chunker.test.ts` | Section splits; page fallback; long-chunk split (part N/M suffix); empty section skipping; `extractionMethod` propagation; UUID v4 assignment; multiple pages. No mocks — pure transformation. |
+| `lib/vector-store` | `vector-store.test.ts` (updated) | All existing tests updated for renamed methods (`load→loadCsv`, `search→searchCsv`, `getMetadata→getCsvMetadata`). New: dual-partition coexistence; `loadPdf`/`loadCsv` independence; `searchPdf` top-K; `isEmpty`/`isCsvLoaded`/`isPdfLoaded` state machine; `getPdfMetadata`. |
+| `lib/agent` | `agent.test.ts` (updated) | `search_plan_documents` routes to `store.searchPdf()`; `query_bid_data` now calls `searchCsv()`; updated no-data message (mentions CSV + PDF); `search_plan_documents` present in TOOLS array; system prompt contains both CSV and PDF source descriptions. Mocks: `@anthropic-ai/sdk`, `@/lib/vector-store`, `@/lib/embeddings`. |
+| `api/ingest-pdf` | `ingest-pdf.test.ts` | 200 happy path with correct `native_pages`/`vision_pages` counts; 400 no-file; 400 wrong MIME type; 413 oversized (stream limit event); 422 all-pages-empty; 500 embedding failure (partition rolled back via `loadPdf([], ...)`). Mocks: `busboy` (EventEmitter-based), `node:fs`, `@/lib/pdf-extractor`, `@/lib/pdf-chunker`, `@/lib/embeddings`, `@/lib/vector-store`. |
+| `components/PdfUpload` | `PdfUpload.test.tsx` | Renders Upload PDF button; non-PDF rejection with alert; size rejection; loading state disables button; `onUpload` called with `PdfIngestionResult`; `onError` on server error; `disabled` prop respected. Mirrors `FileUpload.test.tsx` pattern exactly. Uses `data-testid="pdf-file-input"`. |
+| `components/ChatInterface` | `ChatInterface.test.tsx` (updated) | PdfUpload button appears before CSV button in DOM; first PDF upload → "Uploaded …" message with chunk count; second PDF upload → "PDF dataset replaced: …" message; both controls independently enabled on mount. Existing CSV tests unchanged. |
+
+### Mock patterns (following CSV conventions)
+
+- **Node environment tests** (`lib/*`, `api/*`): `@jest-environment node` docblock at top of file
+- **`busboy` in `ingest-pdf.test.ts`**: Module-level `bbCallbacks` record captures `on(event, cb)` registrations; tests call `triggerFileUpload()` / `triggerNoFile()` helpers to control the promise lifecycle
+- **`pdfjs-dist` / `pdf-lib` / `openai`**: `jest.mock(...)` with factory functions; `mockGetTextContent` / `mockChatCreate` are `jest.fn()` instances configured per-test via `mockReturnValue` / `mockResolvedValue`
+- **Component tests**: `global.fetch = mockFetch` (same as `FileUpload.test.tsx`)
 
 ---
 

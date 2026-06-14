@@ -19,16 +19,22 @@ jest.mock("@/lib/vector-store", () => ({
   getStore: jest.fn(),
 }));
 
+jest.mock("@/lib/embeddings", () => ({
+  generateEmbeddings: jest.fn().mockResolvedValue([[0.1, 0.2, 0.3]]),
+}));
+
 const mockGetItems = jest.fn();
 const mockIsEmpty = jest.fn();
 const mockGetTopByTotalCost = jest.fn();
-const mockSearch = jest.fn();
+const mockSearchCsv = jest.fn();
+const mockSearchPdf = jest.fn();
 
 const mockStore = {
   isEmpty: mockIsEmpty,
   getItems: mockGetItems,
   getTopByTotalCost: mockGetTopByTotalCost,
-  search: mockSearch,
+  searchCsv: mockSearchCsv,
+  searchPdf: mockSearchPdf,
 };
 
 const _meta: DatasetMetadata = {
@@ -76,18 +82,28 @@ beforeEach(() => {
   (getStore as jest.Mock).mockReturnValue(mockStore);
   mockGetItems.mockReturnValue([sampleItem]);
   mockGetTopByTotalCost.mockReturnValue([sampleItem]);
-  mockSearch.mockReturnValue([]);
+  mockSearchCsv.mockReturnValue([]);
+  mockSearchPdf.mockReturnValue([]);
 });
 
 describe("runAgent", () => {
-  it("returns no-data message without calling API when store is empty", async () => {
+  it("returns no-data message without calling the API when the store is empty", async () => {
     mockIsEmpty.mockReturnValue(true);
     const onToken = jest.fn();
     await runAgent("What are the top items?", onToken);
     expect(mockCreate).not.toHaveBeenCalled();
     expect(onToken).toHaveBeenCalledWith(
-      expect.stringContaining("No bid data"),
+      expect.stringContaining("No data"),
     );
+  });
+
+  it("no-data message mentions both CSV and PDF upload options", async () => {
+    mockIsEmpty.mockReturnValue(true);
+    const onToken = jest.fn();
+    await runAgent("What are the top items?", onToken);
+    const combined = onToken.mock.calls.map((c: unknown[]) => c[0]).join("");
+    expect(combined).toMatch(/CSV/i);
+    expect(combined).toMatch(/PDF/i);
   });
 
   it("calls onToken with streamed text content", async () => {
@@ -118,7 +134,7 @@ describe("runAgent", () => {
     expect(combined).toContain("top 5 items");
   });
 
-  it("routes semantic questions through query_bid_data tool", async () => {
+  it("routes CSV semantic questions through query_bid_data which calls searchCsv", async () => {
     mockIsEmpty.mockReturnValue(false);
     mockCreate
       .mockResolvedValueOnce(
@@ -132,7 +148,55 @@ describe("runAgent", () => {
     const onToken = jest.fn();
     await runAgent("Show me drainage-related work", onToken);
     expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect(mockSearchCsv).toHaveBeenCalled();
     const combined = onToken.mock.calls.map((c: unknown[]) => c[0]).join("");
     expect(combined).toContain("Drainage");
+  });
+
+  it("routes PDF questions through search_plan_documents which calls searchPdf", async () => {
+    mockIsEmpty.mockReturnValue(false);
+    mockCreate
+      .mockResolvedValueOnce(
+        makeToolUseResponse("search_plan_documents", "tu_3", {
+          query: "drainage requirements",
+          top_k: 5,
+        }),
+      )
+      .mockResolvedValueOnce(
+        makeTextResponse("According to Sheet D-101, install 24-inch pipe."),
+      );
+
+    const onToken = jest.fn();
+    await runAgent("What does the plan say about drainage?", onToken);
+    expect(mockCreate).toHaveBeenCalledTimes(2);
+    expect(mockSearchPdf).toHaveBeenCalled();
+    const combined = onToken.mock.calls.map((c: unknown[]) => c[0]).join("");
+    expect(combined).toContain("D-101");
+  });
+
+  it("includes search_plan_documents in the TOOLS array", async () => {
+    mockIsEmpty.mockReturnValue(false);
+    mockCreate.mockResolvedValue(makeTextResponse("ok"));
+    await runAgent("hi", jest.fn());
+
+    const firstCall = mockCreate.mock.calls[0][0];
+    const toolNames = firstCall.tools.map(
+      (t: { name: string }) => t.name,
+    );
+    expect(toolNames).toContain("search_plan_documents");
+  });
+
+  it("includes both CSV and PDF sources in the system prompt", async () => {
+    mockIsEmpty.mockReturnValue(false);
+    mockCreate.mockResolvedValue(makeTextResponse("ok"));
+    await runAgent("hi", jest.fn());
+
+    const firstCall = mockCreate.mock.calls[0][0];
+    const systemPrompt =
+      typeof firstCall.system === "string"
+        ? firstCall.system
+        : firstCall.messages?.[0]?.content ?? "";
+    expect(systemPrompt).toMatch(/CSV/i);
+    expect(systemPrompt).toMatch(/PDF|plan/i);
   });
 });
