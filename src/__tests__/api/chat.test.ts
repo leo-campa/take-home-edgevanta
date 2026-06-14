@@ -2,7 +2,7 @@
  * @jest-environment node
  */
 import type { NextApiRequest, NextApiResponse } from "next";
-import handler from "./chat";
+import handler from "@/pages/api/chat";
 
 jest.mock("@/lib/agent", () => ({
   runAgent: jest.fn(),

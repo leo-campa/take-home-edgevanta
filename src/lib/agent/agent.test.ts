@@ -104,6 +104,15 @@ describe("runAgent", () => {
     expect(combined).toMatch(/PDF/i);
   });
 
+  it("no-data message mentions both CSV and PDF upload options", async () => {
+    mockIsEmpty.mockReturnValue(true);
+    const onToken = jest.fn();
+    await runAgent("What are the top items?", onToken);
+    const combined = onToken.mock.calls.map((c: unknown[]) => c[0]).join("");
+    expect(combined).toMatch(/CSV/i);
+    expect(combined).toMatch(/PDF/i);
+  });
+
   it("calls onToken with streamed text content", async () => {
     mockIsEmpty.mockReturnValue(false);
     mockCreate.mockResolvedValue(makeTextResponse("Here are the top items."));

@@ -8,8 +8,11 @@ import type { ExtractedPage } from "@/lib/pdf-extractor/model";
 // ─── busboy mock ──────────────────────────────────────────────────────────────
 type BbCallback = (...args: unknown[]) => void;
 const bbCallbacks: Record<string, BbCallback> = {};
-const mockBB = {
-  on: jest.fn((event: string, cb: BbCallback) => {
+interface MockBusboyInstance {
+  on: jest.Mock;
+}
+const mockBB: MockBusboyInstance = {
+  on: jest.fn((event: string, cb: BbCallback): MockBusboyInstance => {
     bbCallbacks[event] = cb;
     return mockBB;
   }),
@@ -19,16 +22,25 @@ jest.mock("busboy", () => jest.fn(() => mockBB));
 // ─── fs mock ──────────────────────────────────────────────────────────────────
 type StreamCallback = (...args: unknown[]) => void;
 const wsCallbacks: Record<string, StreamCallback> = {};
-const mockWriteStream = {
-  on: jest.fn((event: string, cb: StreamCallback) => {
+interface MockWriteStream {
+  on: jest.Mock;
+  destroy: jest.Mock;
+}
+const mockWriteStream: MockWriteStream = {
+  on: jest.fn((event: string, cb: StreamCallback): MockWriteStream => {
     wsCallbacks[event] = cb;
     return mockWriteStream;
   }),
   destroy: jest.fn(),
 };
 const streamCallbacks: Record<string, StreamCallback> = {};
-const mockStream = {
-  on: jest.fn((event: string, cb: StreamCallback) => {
+interface MockReadStream {
+  on: jest.Mock;
+  pipe: jest.Mock;
+  destroy: jest.Mock;
+}
+const mockStream: MockReadStream = {
+  on: jest.fn((event: string, cb: StreamCallback): MockReadStream => {
     streamCallbacks[event] = cb;
     return mockStream;
   }),
@@ -63,7 +75,7 @@ jest.mock("@/lib/vector-store", () => ({
   getStore: jest.fn(() => ({ loadPdf: mockLoadPdf })),
 }));
 
-import handler from "./ingest-pdf";
+import handler from "@/pages/api/ingest-pdf";
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 function buildReq(method = "POST"): NextApiRequest {
