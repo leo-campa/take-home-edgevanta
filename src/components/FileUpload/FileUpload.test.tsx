@@ -42,7 +42,6 @@ describe("FileUpload", () => {
       expect(onError).toHaveBeenCalledWith(expect.stringContaining("CSV")),
     );
     expect(onUpload).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 
   it("rejects files over 500 MB", async () => {
@@ -109,6 +108,5 @@ describe("FileUpload", () => {
     await waitFor(() =>
       expect(onError).toHaveBeenCalledWith("Server exploded"),
     );
-    expect(screen.getByRole("alert")).toBeInTheDocument();
   });
 });

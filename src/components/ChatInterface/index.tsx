@@ -69,6 +69,11 @@ export default function ChatInterface() {
 
   return (
     <div className={styles["chat-interface-component"]}>
+      <header className={styles["chat-interface-component__topbar"]}>
+        <span className={styles["chat-interface-component__topbar-title"]}>
+          Agent Edgevanta
+        </span>
+      </header>
       <div className={styles["chat-interface-component__message-area"]}>
         <MessageList messages={messages} isStreaming={isStreaming} />
       </div>
