@@ -1,7 +1,8 @@
 import fs from "node:fs";
 import OpenAI from "openai";
+import type { ChatCompletion } from "openai/resources/chat/completions";
 import { PDFDocument } from "pdf-lib";
-import { getDocument } from "pdfjs-dist";
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 import type { ExtractedPage } from "./model";
 
 export const MIN_NATIVE_CHARS = 200;
@@ -57,7 +58,7 @@ export async function extractPdfPages(
     const page = await pdfDoc.getPage(pageNum);
     const textContent = await page.getTextContent();
     const rawText = textContent.items
-      .map((item: { str: string }) => item.str)
+      .map((item) => ("str" in item ? item.str : ""))
       .join("");
     const meaningfulChars = rawText.replace(/[\s\W]/g, "").length;
 
@@ -99,7 +100,7 @@ export async function extractPdfPages(
       const base64 = Buffer.from(singlePageBytes).toString("base64");
 
       visionCallCount++;
-      const response = await openai.chat.completions.create({
+      const response = (await openai.chat.completions.create({
         model: "gpt-4.1",
         messages: [
           { role: "system", content: VISION_SYSTEM_PROMPT },
@@ -116,7 +117,7 @@ export async function extractPdfPages(
             ],
           },
         ],
-      } as Parameters<typeof openai.chat.completions.create>[0]);
+      } as Parameters<typeof openai.chat.completions.create>[0])) as ChatCompletion;
 
       const content = response.choices[0]?.message?.content ?? "";
 
