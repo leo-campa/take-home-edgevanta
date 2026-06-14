@@ -70,6 +70,7 @@ When a user visits the chat interface, they see two distinct upload controls in 
 - Whole-file extraction failure (corrupted file, encrypted/password-protected PDF that cannot be opened at all): the backend returns an error; the UI displays the failure reason in the chat and re-enables the PDF upload button for retry. CSV data (if loaded) is unaffected.
 - Embedding generation fails partway through PDF ingestion: the system rolls back the PDF partition entirely — clears any partially stored PDF data — and returns an error. The UI displays the failure reason and re-enables the PDF upload button. CSV data is unaffected.
 - Simultaneous upload attempt: each upload button controls its own partition independently; one upload completing or failing does not affect the other.
+- Large fully-scanned PDF exceeding `MAX_VISION_PAGES` (default: 50): pages within the cap are processed normally via vision fallback; pages beyond the cap are skipped and counted in `skipped_pages`. A warning is included in the API response (e.g., "Vision cap of 50 reached — 30 pages not attempted"). The ingestion succeeds with the content extracted from pages within the cap. The UI shows the confirmation message with the skip count.
 - Non-PDF file selected via PDF control: rejected client-side.
 - Server restart: all in-memory data (both CSV and PDF partitions) is lost; the next chat request returns a no-data response; the UI shows a system message prompting re-upload.
 
@@ -87,9 +88,10 @@ When a user visits the chat interface, they see two distinct upload controls in 
 - **FR-008**: When a second PDF is uploaded while a first PDF is already loaded, the PDF partition MUST be replaced with the new data; a system message MUST be inserted: "PDF dataset replaced: '{filename}' — {N} chunks ingested." When a PDF is uploaded while CSV data is already loaded, the CSV partition MUST remain untouched.
 - **FR-009**: The UI MUST display a confirmation message in the chat after successful PDF ingestion, including the filename and the number of content chunks processed.
 - **FR-010**: The UI MUST display a clear error message in the chat (or inline on the button) when a PDF upload or ingestion fails, including the failure reason.
-- **FR-011**: If a single PDF page yields no content after both extraction methods, that page MUST be skipped and counted in `skipped_pages`; ingestion MUST continue with the remaining pages. If ALL pages are skipped, the backend MUST return an error and the UI MUST display a clear explanation rather than silently ingesting an empty dataset. The confirmation message MUST include the skip count when `skipped_pages > 0`.
+- **FR-011**: If a single PDF page yields no content after both extraction methods, that page MUST be skipped and counted in `skipped_pages`; ingestion MUST continue with the remaining pages. If ALL pages are skipped, the backend MUST return an error and the UI MUST display a clear explanation rather than silently ingesting an empty dataset. The confirmation message MUST include a unified skip count when `skipped_pages > 0` (e.g., "87 chunks ingested, 2 pages skipped") — the reason for each skipped page (extraction failure vs. vision cap reached) is recorded in the `warnings` array only and is NOT surfaced separately in the chat confirmation message.
 - **FR-012**: If embedding generation fails at any point during PDF ingestion, the system MUST roll back the PDF partition entirely — clearing any partially stored PDF data — and return an error. The UI MUST display the failure reason and re-enable the PDF upload control for retry.
 - **FR-013**: The PDF ingestion pipeline MUST have its own dedicated file and module structure, separate from the CSV pipeline, while sharing the same vector store and agent/chat infrastructure.
+- **FR-018**: The vision fallback path MUST be capped at a configurable maximum number of pages per ingestion session (`MAX_VISION_PAGES`, default: 50). Pages beyond this cap MUST be treated as skipped (same skip-and-continue rules as FR-011), counted in `skipped_pages`, and recorded in the `warnings` array with a reason indicating the cap was reached. If the cap is hit, the API response MUST include a warning noting how many pages were not attempted.
 - **FR-014**: Agent responses to questions asked after PDF ingestion MUST stream token-by-token to the browser and render in the conversation area in the same format as CSV-sourced answers.
 - **FR-015**: If no data has been ingested (neither CSV nor PDF), the agent MUST respond to queries with a message indicating that no data is available.
 - **FR-016**: The agent MUST search both the CSV partition and the PDF partition when both are loaded, combining results from both sources to answer the user's question.
@@ -106,7 +108,7 @@ When a user visits the chat interface, they see two distinct upload controls in 
 ### Measurable Outcomes
 
 - **SC-001a**: A user can upload a 10-page digitally-generated PDF (text layer present), see a confirmation in the chat, and ask their first question within 30 seconds on standard hardware (native extraction path; no AI vision calls required).
-- **SC-001b**: A user can upload a 10-page fully-scanned PDF (no text layer), see a confirmation in the chat, and ask their first question within 120 seconds on standard hardware (all pages go through vision fallback; ~10 Claude API calls).
+- **SC-001b**: A user can upload a 10-page fully-scanned PDF (no text layer), see a confirmation in the chat, and ask their first question within 120 seconds on standard hardware (all pages go through vision fallback; ~10 GPT-4.1 API calls).
 - **SC-002a**: After submitting a question about PDF content, the first streaming token appears in the conversation within 2 seconds.
 - **SC-002b**: The full agent response is complete within 15 seconds of submission for questions that do not require large-scale retrieval.
 - **SC-003**: 100% of non-PDF file upload attempts via the PDF control are rejected client-side before reaching the backend.
@@ -123,10 +125,16 @@ When a user visits the chat interface, they see two distinct upload controls in 
 - Q: When an individual PDF page fails both native and vision extraction, should the ingestion skip that page and continue, or abort and roll back? → A: Skip and continue — failed pages are counted in `skipped_pages` with a warning; ingestion only fails entirely when all pages are skipped.
 - Q: SC-001 targets 10-page PDF in 120s, but hybrid extraction means native PDFs complete in seconds while scanned PDFs take much longer — should the success criterion split by PDF type? → A: Yes — two targets: SC-001a (10-page digitally-generated PDF ≤ 30s, native path) and SC-001b (10-page scanned PDF ≤ 120s, all-vision path).
 
+### Session 2026-06-14 (continued)
+
+- Q: For large scanned PDFs where vision fallback is needed for many pages, what should happen when processing would take very long or exceed the server timeout? → A: B — cap the number of pages that may use vision fallback per ingestion session (MAX_VISION_PAGES = 50 default); pages beyond the cap are treated as skipped with a warning in the response.
+- Q: Should the chat confirmation message distinguish between pages skipped due to extraction failure vs. pages not attempted due to the vision cap? → A: C — single unified `skipped_pages` count in the chat confirmation message; per-page reason breakdown (failure vs. cap) available only in the `warnings` array of the API response.
+
 ## Assumptions
 
 - PDF content is treated as unstructured text for embedding purposes; tables and structured data within the PDF are captured as text but not parsed into structured fields (unlike CSV column normalization).
 - The PDF upload size limit matches the CSV limit (500 MB). Ingestion performance differs substantially by PDF type: digitally-generated PDFs (with embedded text layers) process via native extraction and complete in seconds; scanned PDFs require vision fallback for each image-only page and take proportionally longer. SC-001a and SC-001b reflect these two reference cases.
+- The vision fallback is capped at `MAX_VISION_PAGES = 50` pages per ingestion session by default. This prevents server timeout (10-minute API ceiling) for large fully-scanned plan sets: 50 pages × ~10 s per call ≈ 500 s, within the 600 s endpoint limit. Pages beyond the cap are skipped with a warning; the cap constant can be raised without code changes elsewhere.
 - The in-memory vector store holds two independent partitions — one for CSV bid data and one for PDF plan content. Each partition is replaced only when a new file of the same type is uploaded.
 - The agent has distinct tools for each partition: structured analytics tools and `query_bid_data` for CSV; `search_plan_documents` for PDF. It may call tools from both partitions in a single response turn.
 - Password-protected or encrypted PDFs are treated as extraction failures and rejected with a clear error message.
