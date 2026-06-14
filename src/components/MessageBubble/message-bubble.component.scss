@@ -1,0 +1,46 @@
+.message-bubble-component {
+  display: flex;
+  margin-bottom: 12px;
+
+  &--user {
+    justify-content: flex-end;
+
+    .message-bubble-component__content {
+      background-color: #1976d2;
+      color: #fff;
+      border-radius: 18px 18px 4px 18px;
+      max-width: 70%;
+      padding: 10px 14px;
+    }
+  }
+
+  &--agent {
+    justify-content: flex-start;
+
+    .message-bubble-component__content {
+      background-color: #f5f5f5;
+      color: #212121;
+      border-radius: 18px 18px 18px 4px;
+      max-width: 80%;
+      padding: 10px 14px;
+    }
+  }
+
+  &--system {
+    justify-content: center;
+
+    .message-bubble-component__content {
+      background-color: #e3f2fd;
+      color: #1565c0;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      padding: 6px 12px;
+      text-align: center;
+    }
+  }
+
+  &__content {
+    word-break: break-word;
+    line-height: 1.5;
+  }
+}

@@ -66,7 +66,7 @@ As the conversation grows, earlier messages remain accessible by scrolling up. T
 - File exceeds 500 MB: rejected client-side before any upload attempt; a clear error message is displayed inline (e.g., "File exceeds the 500 MB limit"). No network request is sent. Covered by FR-001.
 - Streaming connection loss mid-response: an error message is appended to the conversation ("Connection lost — please try again") and the input is re-enabled so the user can retry their question.
 - Server restart / data loss: if the server restarts and the in-memory store is cleared, the next chat request returns a no-data response. The UI displays a system message: "Server restarted — bid data was cleared. Please re-upload your CSV." The user is not left to discover the loss through a confusing answer.
-- Navigation away and return: conversation history is not persisted — navigating away from the page or refreshing clears the chat. The server-side data (vector store) remains in memory until the server restarts. On return, the user starts a fresh conversation but may ask questions immediately if the server still holds data.
+- Navigation away and return: conversation history is not persisted — navigating away from `/chat` or refreshing clears the chat. The server-side data (vector store) remains in memory until the server restarts. On return, the user starts a fresh conversation but may ask questions immediately if the server still holds data.
 - Partial embedding failure: if embedding generation fails at any point during ingestion, the entire operation is rolled back — the in-memory store is cleared and no partial data is retained. The UI displays a clear error message with the failure reason and the upload control is re-enabled for retry.
 
 ## Requirements *(mandatory)*
@@ -135,4 +135,4 @@ As the conversation grows, earlier messages remain accessible by scrolling up. T
 - The server saves uploaded CSV files to a configurable local directory (e.g., `./uploads/`). File management (deletion, listing prior uploads) is out of scope.
 - The file size limit for uploads is 500 MB; the system must handle large DOT bid tabulation files without timing out on a standard developer machine.
 - Markdown formatting in agent responses is rendered (not displayed as raw text) for readability.
-- The project already has a Next.js frontend scaffolded; this feature adds UI components and API routes to the existing project.
+- The project already has a Next.js frontend scaffolded; this feature adds UI components and API routes to the existing project. The chat interface is served at `/chat`; the root `/` redirects there via `getServerSideProps`.
