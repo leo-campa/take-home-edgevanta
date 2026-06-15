@@ -10,11 +10,11 @@
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
-| `file` | File | Yes | CSV only, max 500 MB |
+| `file` | File | Yes | CSV only, max 100 MB |
 
 **Client-side validation** (before any network request):
 - `file.name` ends in `.csv` OR `file.type` is `text/csv`
-- `file.size` ≤ `524_288_000` bytes (500 MB)
+- `file.size` ≤ `104_857_600` bytes (100 MB)
 
 ## Route Config
 
@@ -58,7 +58,7 @@ export const config = {
 ### 413 Payload Too Large
 
 ```json
-{ "error": "File exceeds the 500 MB limit." }
+{ "error": "File exceeds the 100 MB limit." }
 ```
 
 ### 422 Unprocessable Entity

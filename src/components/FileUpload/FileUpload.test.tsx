@@ -44,16 +44,16 @@ describe("FileUpload", () => {
     expect(onUpload).not.toHaveBeenCalled();
   });
 
-  it("rejects files over 500 MB", async () => {
+  it("rejects files over 100 MB", async () => {
     const { onUpload, onError } = renderComponent();
     const input = screen.getByTestId("csv-file-input");
     const bigFile = new File(["x"], "big.csv", { type: "text/csv" });
-    Object.defineProperty(bigFile, "size", { value: 600_000_000 });
+    Object.defineProperty(bigFile, "size", { value: 200_000_000 });
 
     await userEvent.upload(input, bigFile);
 
     expect(onUpload).not.toHaveBeenCalled();
-    expect(onError).toHaveBeenCalledWith(expect.stringContaining("500 MB"));
+    expect(onError).toHaveBeenCalledWith(expect.stringContaining("100 MB"));
   });
 
   it("calls onUpload with result on successful upload", async () => {

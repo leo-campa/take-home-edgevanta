@@ -89,9 +89,9 @@ Select a `.pdf` or `.txt` file.
 
 ### 7 — Oversized File (FR-001)
 
-Select or simulate a file > 500 MB.
+Select or simulate a file > 100 MB.
 
-**Expected**: Client-side rejection — `"File exceeds the 500 MB limit"` — no upload request sent.
+**Expected**: Client-side rejection — `"File exceeds the 100 MB limit"` — no upload request sent.
 
 ---
 
@@ -121,7 +121,7 @@ Key cases verified by tests:
 | `lib/bid-item-formatter` | full BidItem produces correct text chunk; missing fields are omitted |
 | `hooks/useChat` | mock WS: tokens accumulate in message content; `done` clears `isStreaming`; `error` appends error message |
 | `components/ChatInput` | RTL: send button disabled when input empty; fires `onSend` on Enter; shows spinner when `isStreaming` |
-| `components/FileUpload` | RTL: non-CSV file shows error; file > 500 MB shows error; valid CSV calls `onUpload` |
+| `components/FileUpload` | RTL: non-CSV file shows error; file > 100 MB shows error; valid CSV calls `onUpload` |
 
 ## Environment Variables
 

@@ -79,10 +79,10 @@
 
 ### Ingest API & FileUpload UI — `feature/csv-flow/ingest-api`
 
-- [ ] T033 [US1] Implement `src/pages/api/ingest.ts` — disable bodyParser (`export const config`), parse multipart with `busboy` (limit 500 MB, return 413 on overflow), save file to `./uploads/<ISO>-<filename>` via `fs.createWriteStream`, parse saved file with `papaparse`, call `normaliseRow` per row, call `generateEmbeddings`, call `getStore().load()`; on embedding error roll back store and return 500; return `IngestionResult` JSON on success
-- [ ] T034 [P] [US1] Implement `src/components/FileUpload/index.tsx` — hidden `<input type="file" accept=".csv">` triggered by MUI `Button`; client-side validation: reject non-CSV (file name extension check) and files >500 MB before fetch; `POST` to `/api/ingest` with `FormData`; call `onUpload(result)` on success or `onError(message)` on failure; expose `isLoading` state
+- [ ] T033 [US1] Implement `src/pages/api/ingest.ts` — disable bodyParser (`export const config`), parse multipart with `busboy` (limit 100 MB, return 413 on overflow), save file to `./uploads/<ISO>-<filename>` via `fs.createWriteStream`, parse saved file with `papaparse`, call `normaliseRow` per row, call `generateEmbeddings`, call `getStore().load()`; on embedding error roll back store and return 500; return `IngestionResult` JSON on success
+- [ ] T034 [P] [US1] Implement `src/components/FileUpload/index.tsx` — hidden `<input type="file" accept=".csv">` triggered by MUI `Button`; client-side validation: reject non-CSV (file name extension check) and files >100 MB before fetch; `POST` to `/api/ingest` with `FormData`; call `onUpload(result)` on success or `onError(message)` on failure; expose `isLoading` state
 - [ ] T035 [P] [US1] Create `src/components/FileUpload/file-upload.component.scss` — `.file-upload-component { &__button {} &__error {} &__loading {} }`
-- [ ] T036 [P] [US1] Write `src/components/FileUpload/FileUpload.test.tsx` — RTL: non-CSV file shows error and does not call `onUpload`; file >500 MB shows error; valid CSV calls `onUpload` with result; loading state disables button during fetch
+- [ ] T036 [P] [US1] Write `src/components/FileUpload/FileUpload.test.tsx` — RTL: non-CSV file shows error and does not call `onUpload`; file >100 MB shows error; valid CSV calls `onUpload` with result; loading state disables button during fetch
 
 **Checkpoint**: Upload the DOT bid CSV → confirmation message in chat with record count → `./uploads/` has the file → `npm test` passes for T026, T028, T030, T032, T036.
 

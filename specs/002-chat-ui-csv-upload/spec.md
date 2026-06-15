@@ -63,7 +63,7 @@ As the conversation grows, earlier messages remain accessible by scrolling up. T
 ### Edge Cases
 
 - Empty message submission: the send button is disabled and the Enter key is blocked when the text input is empty or contains only whitespace. No submission occurs.
-- File exceeds 500 MB: rejected client-side before any upload attempt; a clear error message is displayed inline (e.g., "File exceeds the 500 MB limit"). No network request is sent. Covered by FR-001.
+- File exceeds 100 MB: rejected client-side before any upload attempt; a clear error message is displayed inline (e.g., "File exceeds the 100 MB limit"). No network request is sent. Covered by FR-001.
 - Streaming connection loss mid-response: an error message is appended to the conversation ("Connection lost — please try again") and the input is re-enabled so the user can retry their question.
 - Server restart / data loss: if the server restarts and the in-memory store is cleared, the next chat request returns a no-data response. The UI displays a system message: "Server restarted — bid data was cleared. Please re-upload your CSV." The user is not left to discover the loss through a confusing answer.
 - Navigation away and return: conversation history is not persisted — navigating away from `/chat` or refreshing clears the chat. The server-side data (vector store) remains in memory until the server restarts. On return, the user starts a fresh conversation but may ask questions immediately if the server still holds data.
@@ -73,7 +73,7 @@ As the conversation grows, earlier messages remain accessible by scrolling up. T
 
 ### Functional Requirements
 
-- **FR-001**: The UI MUST provide a file upload control that accepts only CSV files up to 500 MB and triggers backend ingestion on submission; files exceeding 500 MB MUST be rejected client-side with a clear error message.
+- **FR-001**: The UI MUST provide a file upload control that accepts only CSV files up to 100 MB and triggers backend ingestion on submission; files exceeding 100 MB MUST be rejected client-side with a clear error message.
 - **FR-002**: The UI MUST provide a text input field for typing natural language questions, with a send mechanism (button or Enter key). The send button MUST be disabled and the Enter key MUST be blocked when the input is empty or contains only whitespace.
 - **FR-003**: The UI MUST display agent responses in a conversation area positioned between the top of the page and the text input, with the input pinned to the bottom.
 - **FR-004**: The conversation area MUST show the full message history in chronological order (oldest at top, newest just above the input).
@@ -115,7 +115,7 @@ As the conversation grows, earlier messages remain accessible by scrolling up. T
 
 ### Session 2026-06-13
 
-- Q: Maximum CSV file upload size → A: 500 MB (client-side rejection for files exceeding this limit)
+- Q: Maximum CSV file upload size → A: 100 MB (client-side rejection for files exceeding this limit)
 - Q: What happens when the user submits an empty message? → A: Disable send button and block Enter key when input is empty or whitespace-only (no submission occurs)
 - Q: What should happen if the streaming connection drops mid-response? → A: Append error in conversation ("Connection lost — please try again") and re-enable input so user can retry
 - Q: What should happen if embedding generation fails partway through a CSV? → A: Roll back entirely — clear the store, show error with reason, re-enable upload for retry; no partial data retained
@@ -133,6 +133,6 @@ As the conversation grows, earlier messages remain accessible by scrolling up. T
 - The in-memory vector store is cleared and replaced on each new CSV upload; there is no support for querying across multiple datasets simultaneously.
 - There is no data-status endpoint or on-mount polling. After a page refresh, the UI starts with an empty conversation; if the server still holds data, the user will discover it naturally on their first question. If no data is loaded, the no_data response prompts re-upload.
 - The server saves uploaded CSV files to a configurable local directory (e.g., `./uploads/`). File management (deletion, listing prior uploads) is out of scope.
-- The file size limit for uploads is 500 MB; the system must handle large DOT bid tabulation files without timing out on a standard developer machine.
+- The file size limit for uploads is 100 MB; the system must handle large DOT bid tabulation files without timing out on a standard developer machine.
 - Markdown formatting in agent responses is rendered (not displayed as raw text) for readability.
 - The project already has a Next.js frontend scaffolded; this feature adds UI components and API routes to the existing project. The chat interface is served at `/chat`; the root `/` redirects there via `getServerSideProps`.
