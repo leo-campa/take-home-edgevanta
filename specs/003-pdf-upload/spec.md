@@ -4,7 +4,7 @@
 
 **Created**: 2026-06-14
 
-**Status**: Draft
+**Status**: Complete
 
 **Input**: User description: "I want to add a feature where the user can upload pdf files. The button to upload the pdf must stay right above of csv button. The pdf should follow the same flow of csv but having its own files structure but rendering the result on the chat as csv is doing"
 

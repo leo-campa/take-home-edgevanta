@@ -118,9 +118,19 @@
 **Purpose**: End-to-end validation, coverage confirmation, and lint clean-up.
 
 - [X] T026 [P] Run `npm test -- --coverage` — confirm all new lib modules (`pdf-extractor`, `pdf-chunker`) and components (`PdfUpload`) have coverage; confirm updated modules (`vector-store`, `agent`, `ChatInterface`) still pass
-- [ ] T027 Run all `quickstart.md` validation scenarios manually end-to-end (Scenarios 1–10: UI layout, non-PDF rejection, native path, vision path, mixed path, PDF Q&A, combined Q&A, CSV preserved after PDF upload, second PDF replaces first, independent controls)
+- [X] T027 Run all `quickstart.md` validation scenarios manually end-to-end (Scenarios 1–10: UI layout, non-PDF rejection, native path, vision path, mixed path, PDF Q&A, combined Q&A, CSV preserved after PDF upload, second PDF replaces first, independent controls)
 - [X] T028 [P] Run `npm run lint` (Biome) and fix any reported issues across new and modified files
 - [X] T029 [P] Verify `jest.config.ts` per-file `@jest-environment` annotations are correct — `node` for `pdf-extractor`, `pdf-chunker`, `ingest-pdf` tests; `jsdom` (default) for component tests
+
+---
+
+## Phase 7: Submission Hardening
+
+**Purpose**: Post-spec improvements made during submission review — programmatic API exposure, CSS architecture migration, and test coverage gaps closed.
+
+- [X] T030 Expose agent tools as a programmatic HTTP API — `GET /api/tools` returns the tool catalog with input schemas; `POST /api/tools/invoke` accepts `{ name, input }` and returns structured JSON; export `TOOLS` and `executeTool` from `src/lib/agent/index.ts` (`feat/expose-api`)
+- [X] T031 Migrate from CSS Modules to plain SCSS — sync all `.module.scss` content into plain `.scss` files, import all stylesheets globally from `_app.tsx`, replace `styles["class-name"]` with direct string class names, install and apply `classnames` (`cx`) for dynamic class composition, delete all `.module.scss` files (`feat/update-css-use`)
+- [X] T032 Add unit tests for tools API endpoints — `src/__tests__/api/tools.test.ts` and `src/__tests__/api/tools-invoke.test.ts` covering happy path, missing name, unknown tool, and method validation; update README to remove resolved gap and add S3 storage as future improvement (`feat/add-missing-unit-tests`)
 
 ---
 
