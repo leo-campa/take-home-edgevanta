@@ -15,4 +15,5 @@ export type SseEvent =
 export type ChatState = {
   messages: Message[];
   isStreaming: boolean;
+  retryLast: (() => void) | null;
 };

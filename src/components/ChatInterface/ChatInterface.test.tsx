@@ -9,6 +9,7 @@ jest.mock("@/hooks/useChat", () => ({
   useChat: () => ({
     messages: [],
     isStreaming: false,
+    retryLast: null,
     sendQuestion: mockSendQuestion,
     addMessage: mockAddMessage,
   }),

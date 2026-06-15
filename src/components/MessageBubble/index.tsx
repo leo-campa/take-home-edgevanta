@@ -1,5 +1,6 @@
 import CheckIcon from "@mui/icons-material/Check";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import Button from "@mui/material/Button";
 import IconButton from "@mui/material/IconButton";
 import cx from "classnames";
 import { useState } from "react";
@@ -14,7 +15,7 @@ function formatTime(timestamp: number): string {
   });
 }
 
-export default function MessageBubble({ message }: MessageBubbleProps) {
+export default function MessageBubble({ message, onRetry }: MessageBubbleProps) {
   const { role, type, content, timestamp } = message;
   const [copied, setCopied] = useState(false);
 
@@ -39,6 +40,17 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     <span className="message-bubble-component__timestamp">
       {formatTime(timestamp)}
     </span>
+  );
+
+  const retryBtn = type === "error" && onRetry && (
+    <Button
+      className="message-bubble-component__retry-btn"
+      onClick={onRetry}
+      variant="text"
+      sx={{ fontSize: "0.7rem", minWidth: "auto", padding: "0 4px 4px", lineHeight: 1 }}
+    >
+      Retry
+    </Button>
   );
 
   const copyBtn = role === "agent" && (
@@ -71,7 +83,10 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           {bubble}
           <div className="message-bubble-component__footer">
             {time}
-            {copyBtn}
+            <div className="message-bubble-component__footer-actions">
+              {retryBtn}
+              {copyBtn}
+            </div>
           </div>
         </>
       )}

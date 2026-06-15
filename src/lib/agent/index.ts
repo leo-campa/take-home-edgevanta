@@ -170,7 +170,8 @@ async function runToolCalls(
     toolUseBlocks.map(async (block) => ({
       type: "tool_result" as const,
       tool_use_id: block.id,
-      content: await executeTool(block.name, block.input as Record<string, unknown>),
+      content: await executeTool(block.name, block.input as Record<string, unknown>)
+        .catch((err: unknown) => JSON.stringify({ error: String(err) })),
     })),
   );
 }
@@ -192,7 +193,7 @@ export async function runAgent(
     return;
   }
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 3, timeout: 90_000 });
   const messages: Anthropic.MessageParam[] = [{ role: "user", content: question }];
 
   while (true) {
