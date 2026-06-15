@@ -8,6 +8,34 @@ import type {
   VectorStoreState,
 } from "./model";
 
+function dotProduct(a: number[], b: number[]): number {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) sum += a[i] * b[i];
+  return sum;
+}
+
+function topKByScore<T extends { vector: number[] }>(
+  entries: T[],
+  queryVector: number[],
+  topK: number,
+): T[] {
+  return entries
+    .map((entry) => ({ entry, score: dotProduct(entry.vector, queryVector) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK)
+    .map((s) => s.entry);
+}
+
+function groupByDescription(items: BidItem[]): Record<string, BidItem[]> {
+  const groups: Record<string, BidItem[]> = {};
+  for (const item of items) {
+    const key = item.description ?? "__no_desc__";
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(item);
+  }
+  return groups;
+}
+
 class VectorStore {
   private state: VectorStoreState = {
     csvEntries: [],
@@ -49,62 +77,43 @@ class VectorStore {
   }
 
   searchCsv(queryVector: number[], topK = 5): VectorEntry[] {
-    if (this.state.csvEntries.length === 0) return [];
-    const scored = this.state.csvEntries.map((entry) => ({
-      entry,
-      score: dotProduct(entry.vector, queryVector),
-    }));
-    scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, topK).map((s) => s.entry);
+    if (!this.isCsvLoaded()) return [];
+    return topKByScore(this.state.csvEntries, queryVector, topK);
   }
 
   searchPdf(queryVector: number[], topK = 5): PdfVectorEntry[] {
-    if (this.state.pdfEntries.length === 0) return [];
-    const scored = this.state.pdfEntries.map((entry) => ({
-      entry,
-      score: dotProduct(entry.vector, queryVector),
-    }));
-    scored.sort((a, b) => b.score - a.score);
-    return scored.slice(0, topK).map((s) => s.entry);
+    if (!this.isPdfLoaded()) return [];
+    return topKByScore(this.state.pdfEntries, queryVector, topK);
   }
 
   getTopByTotalCost(n: number): BidItem[] {
     return [...this.state.csvEntries]
       .filter((e) => e.item.total_cost !== null)
-      .sort(
-        (a, b) => (b.item.total_cost as number) - (a.item.total_cost as number),
-      )
+      .sort((a, b) => (b.item.total_cost as number) - (a.item.total_cost as number))
       .slice(0, n)
       .map((e) => e.item);
   }
 
   detectOutliers(thresholdStddev = 2): OutlierResult[] {
-    const clusters = groupByDescription(this.getItems());
+    const items = this.getItems();
     const results: OutlierResult[] = [];
 
-    for (const items of Object.values(clusters)) {
-      if (items.length < 3) continue;
-      const prices = items
+    for (const group of Object.values(groupByDescription(items))) {
+      const prices = group
         .map((i) => i.unit_price)
         .filter((p): p is number => p !== null);
+
       if (prices.length < 3) continue;
 
       const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
-      const variance =
-        prices.reduce((a, b) => a + (b - mean) ** 2, 0) / prices.length;
+      const variance = prices.reduce((a, b) => a + (b - mean) ** 2, 0) / prices.length;
       const stddev = Math.sqrt(variance);
 
-      for (const item of items) {
+      for (const item of group) {
         if (item.unit_price === null) continue;
         const deviation = Math.abs(item.unit_price - mean) / stddev;
         if (deviation > thresholdStddev) {
-          results.push({
-            item,
-            cluster_mean: mean,
-            cluster_stddev: stddev,
-            deviation_factor: deviation,
-            cluster_size: items.length,
-          });
+          results.push({ item, cluster_mean: mean, cluster_stddev: stddev, deviation_factor: deviation, cluster_size: group.length });
         }
       }
     }
@@ -132,8 +141,7 @@ class VectorStore {
       byUnit[unitKey].count++;
 
       if (typeof item.quantity === "number") {
-        const prev = byUnit[unitKey].total_quantity ?? 0;
-        byUnit[unitKey].total_quantity = prev + item.quantity;
+        byUnit[unitKey].total_quantity = (byUnit[unitKey].total_quantity ?? 0) + item.quantity;
       }
 
       if (typeof item.total_cost === "number") {
@@ -149,22 +157,6 @@ class VectorStore {
       by_unit: byUnit,
     };
   }
-}
-
-function dotProduct(a: number[], b: number[]): number {
-  let sum = 0;
-  for (let i = 0; i < a.length; i++) sum += a[i] * b[i];
-  return sum;
-}
-
-function groupByDescription(items: BidItem[]): Record<string, BidItem[]> {
-  const groups: Record<string, BidItem[]> = {};
-  for (const item of items) {
-    const key = item.description ?? "__no_desc__";
-    if (!groups[key]) groups[key] = [];
-    groups[key].push(item);
-  }
-  return groups;
 }
 
 declare global {

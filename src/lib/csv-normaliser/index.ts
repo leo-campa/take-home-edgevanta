@@ -1,10 +1,4 @@
-import type { BidItem, ColumnMapping, NormalisedRow } from "./model";
-
-const STRING_CANONICAL_FIELDS = new Set<keyof BidItem>([
-  "item_number",
-  "description",
-  "unit",
-]);
+import type { BidItem, ColumnMapping } from "./model";
 
 const CANONICAL_MAP: Record<string, keyof BidItem> = {
   item_no: "item_number",
@@ -25,6 +19,9 @@ const CANONICAL_MAP: Record<string, keyof BidItem> = {
   unit: "unit",
   uom: "unit",
 };
+
+// Fields that should remain as strings rather than parsed as numbers
+const STRING_FIELDS = new Set<keyof BidItem>(["item_number", "description", "unit"]);
 
 export function normaliseHeader(raw: string): string {
   return raw
@@ -50,14 +47,6 @@ export function normaliseRow(
   rawRow: Record<string, string>,
   rowIndex: number,
 ): BidItem {
-  const normalised: NormalisedRow = { headers: {}, values: {} };
-
-  for (const [rawHeader, rawValue] of Object.entries(rawRow)) {
-    const snakeKey = normaliseHeader(rawHeader);
-    normalised.headers[rawHeader] = snakeKey;
-    normalised.values[snakeKey] = normaliseCell(rawValue);
-  }
-
   const item: BidItem = {
     id: String(rowIndex),
     item_number: null,
@@ -73,16 +62,14 @@ export function normaliseRow(
   for (const [rawHeader, rawValue] of Object.entries(rawRow)) {
     const snake = normaliseHeader(rawHeader);
     const canonical = detectCanonicalField(snake);
+
     if (canonical) {
-      if (STRING_CANONICAL_FIELDS.has(canonical)) {
-        const trimmed = rawValue.trim();
-        (item as Record<string, unknown>)[canonical] =
-          trimmed === "" ? null : trimmed;
-      } else {
-        (item as Record<string, unknown>)[canonical] = normalised.values[snake];
-      }
+      const value = STRING_FIELDS.has(canonical)
+        ? rawValue.trim() || null
+        : normaliseCell(rawValue);
+      (item as Record<string, unknown>)[canonical] = value;
     } else {
-      item.extra_fields[snake] = normalised.values[snake] ?? null;
+      item.extra_fields[snake] = normaliseCell(rawValue);
     }
   }
 
@@ -94,9 +81,7 @@ export function buildColumnMapping(rawHeaders: string[]): ColumnMapping {
   for (const raw of rawHeaders) {
     const snake = normaliseHeader(raw);
     const canonical = detectCanonicalField(snake);
-    if (canonical) {
-      mapping[snake] = canonical;
-    }
+    if (canonical) mapping[snake] = canonical;
   }
   return mapping;
 }

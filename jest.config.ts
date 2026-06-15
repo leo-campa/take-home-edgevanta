@@ -9,6 +9,7 @@ const config: Config = {
     "\\.scss$": "identity-obj-proxy",
     "^react-markdown$": "<rootDir>/src/__mocks__/react-markdown.tsx",
     "^remark-gfm$": "<rootDir>/src/__mocks__/remark-gfm.ts",
+    "^pdfjs-dist/legacy/build/pdf\\.mjs$": "pdfjs-dist",
   },
   transform: {
     "^.+\\.(ts|tsx)$": [

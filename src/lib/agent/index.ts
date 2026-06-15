@@ -10,6 +10,19 @@ import { getStore } from "@/lib/vector-store";
 
 const MODEL = "claude-sonnet-4-6";
 
+const SYSTEM_PROMPT = `You are an expert construction estimator assistant with access to two data sources:
+
+1. CSV Bid Data (structured): Contains bid items with quantities, unit prices, and totals.
+   - Use get_top_expensive_items, detect_price_outliers, summarize_quantities, get_average_unit_price for analytical questions
+   - Use query_bid_data for semantic search over bid item descriptions
+
+2. Plan Documents (unstructured): Extracted text from construction plan-set PDFs, including sheet notes, specifications, quantities, and requirements.
+   - Use search_plan_documents for any question about the plan content
+
+When both sources are available, use tools from both to give a complete, cross-referenced answer.
+Always cite the source in your response (e.g., "According to Sheet D-101..." or "From the bid data...").
+Format numbers with commas and currency symbols where appropriate.`;
+
 const TOOLS: Anthropic.Tool[] = [
   {
     name: "get_top_expensive_items",
@@ -96,19 +109,6 @@ const TOOLS: Anthropic.Tool[] = [
   },
 ];
 
-const SYSTEM_PROMPT = `You are an expert construction estimator assistant with access to two data sources:
-
-1. CSV Bid Data (structured): Contains bid items with quantities, unit prices, and totals.
-   - Use get_top_expensive_items, detect_price_outliers, summarize_quantities, get_average_unit_price for analytical questions
-   - Use query_bid_data for semantic search over bid item descriptions
-
-2. Plan Documents (unstructured): Extracted text from construction plan-set PDFs, including sheet notes, specifications, quantities, and requirements.
-   - Use search_plan_documents for any question about the plan content
-
-When both sources are available, use tools from both to give a complete, cross-referenced answer.
-Always cite the source in your response (e.g., "According to Sheet D-101..." or "From the bid data...").
-Format numbers with commas and currency symbols where appropriate.`;
-
 async function executeTool(
   name: string,
   input: Record<string, unknown>,
@@ -119,14 +119,12 @@ async function executeTool(
   switch (name) {
     case "get_top_expensive_items": {
       const n = (input.n as number) ?? 5;
-      const top = getTopExpensiveItems(n, items);
-      return JSON.stringify(top);
+      return JSON.stringify(getTopExpensiveItems(n, items));
     }
 
     case "detect_price_outliers": {
       const threshold = (input.threshold_stddev as number) ?? 2;
-      const outliers = detectPriceOutliers(items, threshold);
-      return JSON.stringify(outliers);
+      return JSON.stringify(detectPriceOutliers(items, threshold));
     }
 
     case "summarize_quantities": {
@@ -135,8 +133,7 @@ async function executeTool(
 
     case "get_average_unit_price": {
       const filter = input.filter as string | undefined;
-      const avg = getAverageUnitPrice(items, filter);
-      return JSON.stringify({ average_unit_price: avg });
+      return JSON.stringify({ average_unit_price: getAverageUnitPrice(items, filter) });
     }
 
     case "query_bid_data": {
@@ -164,6 +161,26 @@ async function executeTool(
   }
 }
 
+async function runToolCalls(
+  content: Anthropic.ContentBlock[],
+): Promise<Anthropic.ToolResultBlockParam[]> {
+  const toolUseBlocks = content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
+
+  return Promise.all(
+    toolUseBlocks.map(async (block) => ({
+      type: "tool_result" as const,
+      tool_use_id: block.id,
+      content: await executeTool(block.name, block.input as Record<string, unknown>),
+    })),
+  );
+}
+
+function emitTextBlocks(content: Anthropic.ContentBlock[], onToken: (token: string) => void) {
+  for (const block of content) {
+    if (block.type === "text") onToken(block.text);
+  }
+}
+
 export async function runAgent(
   question: string,
   onToken: (token: string) => void,
@@ -171,21 +188,14 @@ export async function runAgent(
   const store = getStore();
 
   if (store.isEmpty()) {
-    onToken(
-      "No data has been loaded. Please upload a CSV file (bid data) or a PDF (plan documents), or both.",
-    );
+    onToken("No data has been loaded. Please upload a CSV file (bid data) or a PDF (plan documents), or both.");
     return;
   }
 
   const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const messages: Anthropic.MessageParam[] = [{ role: "user", content: question }];
 
-  const messages: Anthropic.MessageParam[] = [
-    { role: "user", content: question },
-  ];
-
-  let continueLoop = true;
-
-  while (continueLoop) {
+  while (true) {
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 4096,
@@ -195,32 +205,12 @@ export async function runAgent(
     });
 
     if (response.stop_reason === "tool_use") {
-      const toolResults: Anthropic.ToolResultBlockParam[] = [];
-
-      for (const block of response.content) {
-        if (block.type === "tool_use") {
-          const result = await executeTool(
-            block.name,
-            block.input as Record<string, unknown>,
-          );
-          toolResults.push({
-            type: "tool_result",
-            tool_use_id: block.id,
-            content: result,
-          });
-        }
-      }
-
+      const toolResults = await runToolCalls(response.content);
       messages.push({ role: "assistant", content: response.content });
       messages.push({ role: "user", content: toolResults });
     } else {
-      continueLoop = false;
-
-      for (const block of response.content) {
-        if (block.type === "text") {
-          onToken(block.text);
-        }
-      }
+      emitTextBlocks(response.content, onToken);
+      break;
     }
   }
 }
