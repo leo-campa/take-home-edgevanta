@@ -51,6 +51,51 @@ describe("MessageBubble", () => {
   });
 });
 
+describe("MessageBubble — retry button", () => {
+  it("shows retry button on error messages when onRetry is provided", () => {
+    const onRetry = jest.fn();
+    render(
+      <MessageBubble
+        message={makeMessage({ role: "agent", type: "error", content: "Failed" })}
+        onRetry={onRetry}
+      />,
+    );
+    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+  });
+
+  it("does not show retry button when onRetry is not provided", () => {
+    render(
+      <MessageBubble
+        message={makeMessage({ role: "agent", type: "error", content: "Failed" })}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
+  });
+
+  it("does not show retry button on non-error messages", () => {
+    const onRetry = jest.fn();
+    render(
+      <MessageBubble
+        message={makeMessage({ role: "agent", type: "message", content: "All good." })}
+        onRetry={onRetry}
+      />,
+    );
+    expect(screen.queryByRole("button", { name: /retry/i })).not.toBeInTheDocument();
+  });
+
+  it("calls onRetry when retry button is clicked", () => {
+    const onRetry = jest.fn();
+    render(
+      <MessageBubble
+        message={makeMessage({ role: "agent", type: "error", content: "Failed" })}
+        onRetry={onRetry}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /retry/i }));
+    expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("MessageBubble — copy button", () => {
   beforeEach(() => {
     Object.assign(navigator, {

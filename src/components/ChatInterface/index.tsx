@@ -8,7 +8,7 @@ import type { PdfIngestionResult } from "@/components/PdfUpload/model";
 import { useChat } from "@/hooks/useChat";
 
 export default function ChatInterface() {
-  const { messages, isStreaming, sendQuestion, addMessage } = useChat();
+  const { messages, isStreaming, retryLast, sendQuestion, addMessage } = useChat();
   const [dataLoaded, setDataLoaded] = useState(false);
   const [pdfLoaded, setPdfLoaded] = useState(false);
   const [isPdfUploading, setIsPdfUploading] = useState(false);
@@ -74,7 +74,7 @@ export default function ChatInterface() {
         </span>
       </header>
       <div className="chat-interface-component__message-area">
-        <MessageList messages={messages} isStreaming={isStreaming} />
+        <MessageList messages={messages} isStreaming={isStreaming} onRetry={retryLast ?? undefined} />
       </div>
       <div className="chat-interface-component__input-row">
         <div className="chat-interface-component__upload-section">

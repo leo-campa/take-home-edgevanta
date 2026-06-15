@@ -50,6 +50,7 @@ export function useChat(): ChatState & {
 } {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [lastQuestion, setLastQuestion] = useState<string | null>(null);
 
   const addMessage = useCallback((message: Message) => {
     setMessages((prev) => [...prev, message]);
@@ -75,6 +76,7 @@ export function useChat(): ChatState & {
   const sendQuestion = useCallback(
     async (question: string) => {
       if (isStreaming) return;
+      setLastQuestion(question);
 
       const agentId = makeId();
 
@@ -118,17 +120,17 @@ export function useChat(): ChatState & {
           }
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : "Connection lost";
-        console.error("useChat error:", msg);
-        updateAgentMessage(agentId, {
-          role: "system",
-          content: "Connection lost — please try again",
-        });
+        console.error("useChat error:", err instanceof Error ? err.message : err);
+        updateAgentMessage(agentId, { type: "error", content: "Connection lost — please try again" });
         setIsStreaming(false);
       }
     },
     [isStreaming, appendAgentToken, updateAgentMessage],
   );
 
-  return { messages, isStreaming, sendQuestion, addMessage };
+  const retryLast = useCallback(() => {
+    if (lastQuestion) void sendQuestion(lastQuestion);
+  }, [lastQuestion, sendQuestion]);
+
+  return { messages, isStreaming, retryLast: lastQuestion ? retryLast : null, sendQuestion, addMessage };
 }
