@@ -23,7 +23,7 @@ When both sources are available, use tools from both to give a complete, cross-r
 Always cite the source in your response (e.g., "According to Sheet D-101..." or "From the bid data...").
 Format numbers with commas and currency symbols where appropriate.`;
 
-const TOOLS: Anthropic.Tool[] = [
+export const TOOLS: Anthropic.Tool[] = [
   {
     name: "get_top_expensive_items",
     description: "Returns the top N most expensive bid items by total cost.",
@@ -109,7 +109,7 @@ const TOOLS: Anthropic.Tool[] = [
   },
 ];
 
-async function executeTool(
+export async function executeTool(
   name: string,
   input: Record<string, unknown>,
 ): Promise<string> {
