@@ -5,7 +5,7 @@ import cx from "classnames";
 import { useRef, useState } from "react";
 import type { FileUploadProps, IngestionResult } from "./model";
 
-const MAX_BYTES = 524_288_000;
+const MAX_BYTES = 104_857_600;
 
 export default function FileUpload({
   onUpload,
@@ -15,14 +15,13 @@ export default function FileUpload({
 }: FileUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   function validate(file: File): string | null {
     if (!file.name.toLowerCase().endsWith(".csv") && file.type !== "text/csv") {
       return "Only CSV files are accepted.";
     }
     if (file.size > MAX_BYTES) {
-      return "File exceeds the 500 MB limit.";
+      return "File exceeds the 100 MB limit.";
     }
     return null;
   }
@@ -33,12 +32,10 @@ export default function FileUpload({
 
     const validationError = validate(file);
     if (validationError) {
-      setError(validationError);
       onError(validationError);
       return;
     }
 
-    setError(null);
     setIsLoading(true);
     onLoadingChange?.(true);
 
@@ -53,14 +50,14 @@ export default function FileUpload({
 
       if (!response.ok) {
         const json = (await response.json()) as { error?: string };
-        throw new Error(json.error ?? `Server error ${response.status}`);
+        onError(json.error ?? `Server error ${response.status}`);
+        return;
       }
 
       const result = (await response.json()) as IngestionResult;
       onUpload(result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
-      setError(msg);
       onError(msg);
     } finally {
       setIsLoading(false);

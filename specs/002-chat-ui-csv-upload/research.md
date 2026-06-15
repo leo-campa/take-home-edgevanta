@@ -6,7 +6,7 @@
 
 **Decision**: `busboy` for multipart streaming; Next.js bodyParser disabled per-route.
 
-**Rationale**: `busboy` is a low-level streaming multipart parser — it never buffers the whole file in memory, which is essential for 500 MB CSVs. Stream is piped to `fs.createWriteStream` → saved to `./uploads/<ISO-timestamp>-<filename>` before parsing begins (satisfies FR-010).
+**Rationale**: `busboy` is a low-level streaming multipart parser — it never buffers the whole file in memory, which is essential for 100 MB CSVs. Stream is piped to `fs.createWriteStream` → saved to `./uploads/<ISO-timestamp>-<filename>` before parsing begins (satisfies FR-010).
 
 **Route config**:
 ```ts
@@ -16,9 +16,9 @@ export const config = {
 }
 ```
 
-**Size enforcement**: `busboy({ limits: { fileSize: 524_288_000 } })`. On the `'limit'` event return HTTP 413. Client-side guard also rejects before upload.
+**Size enforcement**: `busboy({ limits: { fileSize: 104_857_600 } })`. On the `'limit'` event return HTTP 413. Client-side guard also rejects before upload.
 
-**Alternatives considered**: `formidable` — heavier, breaking API changes across versions. Next.js built-in bodyParser — cannot handle 500 MB.
+**Alternatives considered**: `formidable` — heavier, breaking API changes across versions. Next.js built-in bodyParser — cannot handle 100 MB.
 
 ---
 

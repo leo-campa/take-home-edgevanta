@@ -14,7 +14,7 @@ Build a Next.js (Pages Router) chat interface where a construction estimator upl
 - `next@16.2.9` (Pages Router, existing)
 - `react@19`, `react-dom@19` (existing)
 - `@mui/material`, `@mui/icons-material`, `@emotion/react`, `@emotion/styled` — MUI component library + required peer deps
-- `busboy` + `@types/busboy` — streaming multipart parser for 500 MB uploads
+- `busboy` + `@types/busboy` — streaming multipart parser for 100 MB uploads
 - `papaparse` + `@types/papaparse` — robust CSV parsing
 - `openai` — `text-embedding-3-small` embeddings via OpenAI SDK
 - `@anthropic-ai/sdk` — Claude claude-sonnet-4-6 with streaming for agent reasoning
@@ -34,11 +34,11 @@ Build a Next.js (Pages Router) chat interface where a construction estimator upl
 - Full agent response complete within 10 s per query
 
 **Constraints**:
-- 500 MB upload limit enforced by busboy `limits.fileSize`; client-side rejection before that
+- 100 MB upload limit enforced by busboy `limits.fileSize`; client-side rejection before that
 - Single-user, local-only — no auth, no multi-session handling
 - In-memory store is wiped on server restart (acceptable per spec)
 
-**Scale/Scope**: Single user, local machine, CSVs up to 500 MB
+**Scale/Scope**: Single user, local machine, CSVs up to 100 MB
 
 ## Branch Strategy
 

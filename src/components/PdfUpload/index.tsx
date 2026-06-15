@@ -15,7 +15,6 @@ export default function PdfUpload({
 }: PdfUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   function validate(file: File): string | null {
     if (
@@ -54,14 +53,14 @@ export default function PdfUpload({
 
       if (!response.ok) {
         const json = (await response.json()) as { error?: string };
-        throw new Error(json.error ?? `Server error ${response.status}`);
+        onError(json.error ?? `Server error ${response.status}`);
+        return;
       }
 
       const result = (await response.json()) as PdfIngestionResult;
       onUpload(result);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Upload failed";
-      setError(msg);
       onError(msg);
     } finally {
       setIsLoading(false);
