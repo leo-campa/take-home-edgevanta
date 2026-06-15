@@ -25,38 +25,28 @@ export type IngestionResult = {
 
 const MAX_BYTES = 524_288_000;
 
-export default async function handler(
+type SavedFile = {
+  savedPath: string | null;
+  filename: string;
+  oversized: boolean;
+};
+
+async function saveUploadedFile(
   req: NextApiRequest,
-  res: NextApiResponse,
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const uploadDir = process.env.UPLOAD_DIR ?? "./uploads";
-  fs.mkdirSync(uploadDir, { recursive: true });
-
+  uploadDir: string,
+): Promise<SavedFile> {
   let savedPath: string | null = null;
-  let originalFilename = "upload.csv";
-  let _bytesReceived = 0;
+  let filename = "upload.csv";
   let oversized = false;
 
   await new Promise<void>((resolve, reject) => {
-    const bb = busboy({
-      headers: req.headers,
-      limits: { fileSize: MAX_BYTES },
-    });
+    const bb = busboy({ headers: req.headers, limits: { fileSize: MAX_BYTES } });
 
     bb.on("file", (_field, stream, info) => {
-      originalFilename = info.filename ?? "upload.csv";
+      filename = info.filename ?? "upload.csv";
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      const saveName = `${timestamp}-${originalFilename}`;
-      savedPath = path.resolve(uploadDir, saveName);
+      savedPath = path.resolve(uploadDir, `${timestamp}-${filename}`);
       const writeStream = fs.createWriteStream(savedPath);
-
-      stream.on("data", (chunk: Buffer) => {
-        _bytesReceived += chunk.length;
-      });
 
       stream.on("limit", () => {
         oversized = true;
@@ -75,6 +65,49 @@ export default async function handler(
     req.pipe(bb);
   });
 
+  return { savedPath, filename, oversized };
+}
+
+function parseCsvRows(
+  csvContent: string,
+): { items: BidItem[]; skippedCount: number; warnings: string[]; columnMapping: Record<string, string> } {
+  const parsed = Papa.parse<Record<string, string>>(csvContent, {
+    header: true,
+    skipEmptyLines: true,
+  });
+
+  const columnMapping = buildColumnMapping(parsed.meta.fields ?? []);
+  const items: BidItem[] = [];
+  const warnings: string[] = [];
+  let skippedCount = 0;
+
+  for (let i = 0; i < parsed.data.length; i++) {
+    const row = parsed.data[i];
+    const isEmpty = Object.values(row).every((v) => v.trim() === "");
+    if (isEmpty) {
+      skippedCount++;
+      warnings.push(`Row ${i} skipped: all cells empty`);
+      continue;
+    }
+    items.push(normaliseRow(row, i));
+  }
+
+  return { items, skippedCount, warnings, columnMapping };
+}
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const uploadDir = process.env.UPLOAD_DIR ?? "./uploads";
+  fs.mkdirSync(uploadDir, { recursive: true });
+
+  const { savedPath, filename, oversized } = await saveUploadedFile(req, uploadDir);
+
   if (oversized) {
     return res.status(413).json({ error: "File exceeds the 500 MB limit." });
   }
@@ -86,29 +119,7 @@ export default async function handler(
   }
 
   const csvContent = fs.readFileSync(savedPath, "utf-8");
-  const parsed = Papa.parse<Record<string, string>>(csvContent, {
-    header: true,
-    skipEmptyLines: true,
-  });
-
-  const rawRows = parsed.data;
-  const headers = parsed.meta.fields ?? [];
-  const columnMapping = buildColumnMapping(headers);
-  const warnings: string[] = [];
-
-  const items: BidItem[] = [];
-  let skippedCount = 0;
-
-  for (let i = 0; i < rawRows.length; i++) {
-    const raw = rawRows[i];
-    const values = Object.values(raw);
-    if (values.every((v) => v.trim() === "")) {
-      skippedCount++;
-      warnings.push(`Row ${i} skipped: all cells empty`);
-      continue;
-    }
-    items.push(normaliseRow(raw, i));
-  }
+  const { items, skippedCount, warnings, columnMapping } = parseCsvRows(csvContent);
 
   if (items.length === 0) {
     return res.status(422).json({
@@ -124,7 +135,7 @@ export default async function handler(
     vectors = await generateEmbeddings(texts);
   } catch (err) {
     getStore().loadCsv([], {
-      filename: originalFilename,
+      filename,
       saved_path: savedPath,
       ingested_at: new Date().toISOString(),
       record_count: 0,
@@ -144,7 +155,7 @@ export default async function handler(
   }));
 
   const metadata: DatasetMetadata = {
-    filename: originalFilename,
+    filename,
     saved_path: savedPath,
     ingested_at: new Date().toISOString(),
     record_count: items.length,
@@ -155,13 +166,11 @@ export default async function handler(
 
   getStore().loadCsv(entries, metadata);
 
-  const result: IngestionResult = {
-    filename: originalFilename,
+  return res.status(200).json({
+    filename,
     record_count: items.length,
     skipped_count: skippedCount,
     column_mapping: columnMapping,
     warnings,
-  };
-
-  return res.status(200).json(result);
+  } satisfies IngestionResult);
 }

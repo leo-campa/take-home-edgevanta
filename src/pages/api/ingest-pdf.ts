@@ -5,6 +5,7 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { generateEmbeddings } from "@/lib/embeddings";
 import { chunkExtractedPages } from "@/lib/pdf-chunker";
 import { extractPdfPages } from "@/lib/pdf-extractor";
+import type { ExtractedPage } from "@/lib/pdf-extractor/model";
 import { getStore } from "@/lib/vector-store";
 import type {
   PdfDatasetMetadata,
@@ -28,33 +29,30 @@ export type PdfIngestionResult = {
 
 const MAX_BYTES = 524_288_000;
 
-export default async function handler(
+type SavedFile = {
+  savedPath: string | null;
+  filename: string;
+  mimeType: string;
+  oversized: boolean;
+};
+
+async function saveUploadedFile(
   req: NextApiRequest,
-  res: NextApiResponse,
-) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const uploadDir = process.env.PDF_UPLOAD_DIR ?? "./uploads-pdf";
-  fs.mkdirSync(uploadDir, { recursive: true });
-
+  uploadDir: string,
+): Promise<SavedFile> {
   let savedPath: string | null = null;
-  let originalFilename = "upload.pdf";
+  let filename = "upload.pdf";
   let mimeType = "";
   let oversized = false;
 
   await new Promise<void>((resolve, reject) => {
-    const bb = busboy({
-      headers: req.headers,
-      limits: { fileSize: MAX_BYTES },
-    });
+    const bb = busboy({ headers: req.headers, limits: { fileSize: MAX_BYTES } });
 
     bb.on("file", (_field, stream, info) => {
-      originalFilename = info.filename ?? "upload.pdf";
+      filename = info.filename ?? "upload.pdf";
       mimeType = info.mimeType ?? "";
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-      savedPath = path.resolve(uploadDir, `${timestamp}-${originalFilename}`);
+      savedPath = path.resolve(uploadDir, `${timestamp}-${filename}`);
       const writeStream = fs.createWriteStream(savedPath);
 
       stream.on("limit", () => {
@@ -75,6 +73,31 @@ export default async function handler(
     req.pipe(bb);
   });
 
+  return { savedPath, filename, mimeType, oversized };
+}
+
+function getPageStats(pages: ExtractedPage[]) {
+  return {
+    native_pages: pages.filter((p) => !p.skipped && p.extractionMethod === "native").length,
+    vision_pages: pages.filter((p) => !p.skipped && p.extractionMethod === "vision").length,
+    skipped_pages: pages.filter((p) => p.skipped).length,
+    warnings: pages.flatMap((p) => (p.warning ? [p.warning] : [])),
+  };
+}
+
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse,
+) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
+  const uploadDir = process.env.PDF_UPLOAD_DIR ?? "./uploads-pdf";
+  fs.mkdirSync(uploadDir, { recursive: true });
+
+  const { savedPath, filename, mimeType, oversized } = await saveUploadedFile(req, uploadDir);
+
   if (oversized) {
     return res.status(413).json({ error: "File exceeds the 500 MB limit." });
   }
@@ -86,8 +109,7 @@ export default async function handler(
   }
 
   const isPdf =
-    originalFilename.toLowerCase().endsWith(".pdf") ||
-    mimeType === "application/pdf";
+    filename.toLowerCase().endsWith(".pdf") || mimeType === "application/pdf";
 
   if (!isPdf) {
     return res.status(400).json({ error: "Only PDF files are accepted." });
@@ -101,8 +123,7 @@ export default async function handler(
     return res.status(500).json({ error: `PDF processing failed: ${msg}` });
   }
 
-  const allSkipped = pages.every((p) => p.skipped);
-  if (allSkipped) {
+  if (pages.every((p) => p.skipped)) {
     return res.status(422).json({
       error: "No content could be extracted from this PDF.",
       page_count: pages.length,
@@ -111,17 +132,10 @@ export default async function handler(
   }
 
   const chunks = chunkExtractedPages(pages);
-  const native_pages = pages.filter(
-    (p) => !p.skipped && p.extractionMethod === "native",
-  ).length;
-  const vision_pages = pages.filter(
-    (p) => !p.skipped && p.extractionMethod === "vision",
-  ).length;
-  const skipped_pages = pages.filter((p) => p.skipped).length;
-  const warnings = pages.flatMap((p) => (p.warning ? [p.warning] : []));
+  const { native_pages, vision_pages, skipped_pages, warnings } = getPageStats(pages);
 
   const pdfMeta: PdfDatasetMetadata = {
-    filename: originalFilename,
+    filename,
     saved_path: savedPath,
     ingested_at: new Date().toISOString(),
     page_count: pages.length,
@@ -150,15 +164,13 @@ export default async function handler(
 
   getStore().loadPdf(entries, pdfMeta);
 
-  const result: PdfIngestionResult = {
-    filename: originalFilename,
+  return res.json({
+    filename,
     page_count: pages.length,
     chunk_count: chunks.length,
     native_pages,
     vision_pages,
     skipped_pages,
     warnings,
-  };
-
-  return res.json(result);
+  } satisfies PdfIngestionResult);
 }

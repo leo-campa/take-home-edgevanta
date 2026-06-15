@@ -5,8 +5,47 @@ function makeId(): string {
   return Math.random().toString(36).slice(2);
 }
 
+function makeMessage(
+  overrides: Partial<Message> & Pick<Message, "role" | "type">,
+): Message {
+  return {
+    id: makeId(),
+    content: "",
+    timestamp: Date.now(),
+    ...overrides,
+  };
+}
+
+function parseSseEvents(parts: string[]): SseEvent[] {
+  return parts
+    .map((part) => part.trim())
+    .filter((part) => part.startsWith("data: "))
+    .map((part) => JSON.parse(part.slice(6)) as SseEvent);
+}
+
+function handleSseEvent(
+  event: SseEvent,
+  agentId: string,
+  updateAgent: (id: string, updates: Partial<Message>) => void,
+  setIsStreaming: (v: boolean) => void,
+) {
+  switch (event.type) {
+    case "done":
+      setIsStreaming(false);
+      break;
+    case "error":
+      updateAgent(agentId, { type: "error", content: `Error: ${event.message}` });
+      setIsStreaming(false);
+      break;
+    case "no_data":
+      updateAgent(agentId, { role: "system", content: event.message });
+      setIsStreaming(false);
+      break;
+  }
+}
+
 export function useChat(): ChatState & {
-  sendQuestion: (q: string) => Promise<void>;
+  sendQuestion: (question: string) => Promise<void>;
   addMessage: (message: Message) => void;
 } {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -16,28 +55,34 @@ export function useChat(): ChatState & {
     setMessages((prev) => [...prev, message]);
   }, []);
 
+  const updateAgentMessage = useCallback(
+    (agentId: string, updates: Partial<Message>) => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === agentId ? { ...m, ...updates } : m)),
+      );
+    },
+    [],
+  );
+
+  const appendAgentToken = useCallback((agentId: string, token: string) => {
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === agentId ? { ...m, content: m.content + token } : m,
+      ),
+    );
+  }, []);
+
   const sendQuestion = useCallback(
     async (question: string) => {
       if (isStreaming) return;
 
-      const userMessage: Message = {
-        id: makeId(),
-        role: "user",
-        type: "message",
-        content: question,
-        timestamp: Date.now(),
-      };
-
       const agentId = makeId();
-      const agentMessage: Message = {
-        id: agentId,
-        role: "agent",
-        type: "message",
-        content: "",
-        timestamp: Date.now(),
-      };
 
-      setMessages((prev) => [...prev, userMessage, agentMessage]);
+      setMessages((prev) => [
+        ...prev,
+        makeMessage({ role: "user", type: "message", content: question }),
+        makeMessage({ id: agentId, role: "agent", type: "message" }),
+      ]);
       setIsStreaming(true);
 
       try {
@@ -58,64 +103,31 @@ export function useChat(): ChatState & {
           if (done) break;
 
           buffer += decoder.decode(value, { stream: true });
+
+          // SSE events are separated by double newlines.
+          // The last element may be an incomplete event, so keep it in the buffer.
           const parts = buffer.split("\n\n");
           buffer = parts.pop() ?? "";
 
-          for (const part of parts) {
-            const line = part.trim();
-            if (!line.startsWith("data: ")) continue;
-
-            const event = JSON.parse(line.slice(6)) as SseEvent;
-
+          for (const event of parseSseEvents(parts)) {
             if (event.type === "token") {
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === agentId
-                    ? { ...m, content: m.content + event.content }
-                    : m,
-                ),
-              );
-            } else if (event.type === "done") {
-              setIsStreaming(false);
-            } else if (event.type === "error") {
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === agentId
-                    ? { ...m, type: "error" as const, content: `Error: ${event.message}` }
-                    : m,
-                ),
-              );
-              setIsStreaming(false);
-            } else if (event.type === "no_data") {
-              setMessages((prev) =>
-                prev.map((m) =>
-                  m.id === agentId
-                    ? { ...m, role: "system", content: event.message }
-                    : m,
-                ),
-              );
-              setIsStreaming(false);
+              appendAgentToken(agentId, event.content);
+            } else {
+              handleSseEvent(event, agentId, updateAgentMessage, setIsStreaming);
             }
           }
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Connection lost";
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.id === agentId
-              ? {
-                  ...m,
-                  content: "Connection lost — please try again",
-                  role: "system" as const,
-                }
-              : m,
-          ),
-        );
         console.error("useChat error:", msg);
+        updateAgentMessage(agentId, {
+          role: "system",
+          content: "Connection lost — please try again",
+        });
         setIsStreaming(false);
       }
     },
-    [isStreaming],
+    [isStreaming, appendAgentToken, updateAgentMessage],
   );
 
   return { messages, isStreaming, sendQuestion, addMessage };
