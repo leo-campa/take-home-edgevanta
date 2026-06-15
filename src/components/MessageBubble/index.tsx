@@ -1,4 +1,8 @@
+import CheckIcon from "@mui/icons-material/Check";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import IconButton from "@mui/material/IconButton";
 import cx from "classnames";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { MessageBubbleProps } from "./model";
@@ -12,6 +16,14 @@ function formatTime(timestamp: number): string {
 
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const { role, type, content, timestamp } = message;
+  const [copied, setCopied] = useState(false);
+
+  function handleCopy() {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  }
 
   const bubble = (
     <div className="message-bubble-component__content">
@@ -27,6 +39,17 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
     <span className="message-bubble-component__timestamp">
       {formatTime(timestamp)}
     </span>
+  );
+
+  const copyBtn = role === "agent" && (
+    <IconButton
+      className="message-bubble-component__copy-btn"
+      onClick={handleCopy}
+      size="small"
+      aria-label="Copy message"
+    >
+      {copied ? <CheckIcon fontSize="inherit" /> : <ContentCopyIcon fontSize="inherit" />}
+    </IconButton>
   );
 
   return (
@@ -46,7 +69,10 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
       ) : (
         <>
           {bubble}
-          {time}
+          <div className="message-bubble-component__footer">
+            {time}
+            {copyBtn}
+          </div>
         </>
       )}
     </div>

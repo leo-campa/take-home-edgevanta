@@ -47,12 +47,30 @@
     }
   }
 
+  &__footer {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
   &__timestamp {
     align-self: flex-end;
     font-size: 0.7rem;
     color: #9e9e9e;
     white-space: nowrap;
     padding: 0 6px 4px;
+  }
+
+  &__copy-btn {
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-size: 0.75rem;
+    padding: 2px;
+    color: #9e9e9e;
+  }
+
+  &--agent:hover &__copy-btn {
+    opacity: 1;
   }
 
   &__content {
