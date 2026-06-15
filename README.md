@@ -52,6 +52,18 @@ curl -X POST http://localhost:3000/api/tools/invoke \
   -d '{ "name": "get_top_expensive_items", "input": { "n": 5 } }'
 ```
 
+## Running Tests
+
+```bash
+npm test
+```
+
+To run in watch mode:
+
+```bash
+npm run test:watch
+```
+
 ## Key Decisions
 
 **Hybrid PDF extraction (native → vision fallback)**
