@@ -27,7 +27,10 @@ Output only the extracted content — no commentary, explanations, or preamble.`
 function readFileAsUint8Array(filePath: string): Uint8Array {
   const buffer = fs.readFileSync(filePath);
   return new Uint8Array(
-    buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength),
+    buffer.buffer.slice(
+      buffer.byteOffset,
+      buffer.byteOffset + buffer.byteLength,
+    ),
   );
 }
 
@@ -40,14 +43,21 @@ function hasSectionMarkers(text: string): boolean {
   return /\nSection: /.test(text) || text.startsWith("Section: ");
 }
 
-async function extractTextFromPage(page: Awaited<ReturnType<Awaited<ReturnType<typeof getDocument>["promise"]>["getPage"]>>): Promise<string> {
+async function extractTextFromPage(
+  page: Awaited<
+    ReturnType<Awaited<ReturnType<typeof getDocument>["promise"]>["getPage"]>
+  >,
+): Promise<string> {
   const textContent = await page.getTextContent();
   return textContent.items
     .map((item) => ("str" in item ? item.str : ""))
     .join("");
 }
 
-async function renderPageAsBase64(uint8Array: Uint8Array, pageNum: number): Promise<string> {
+async function renderPageAsBase64(
+  uint8Array: Uint8Array,
+  pageNum: number,
+): Promise<string> {
   const srcDoc = await PDFDocument.load(uint8Array);
   const destDoc = await PDFDocument.create();
   const [copiedPage] = await srcDoc.copyPages(srcDoc, [pageNum - 1]);
@@ -84,10 +94,19 @@ async function callVisionApi(
 }
 
 function makeSkippedPage(pageNum: number, warning: string): ExtractedPage {
-  return { page: pageNum, sheet: null, text: "", extractionMethod: "vision", skipped: true, warning };
+  return {
+    page: pageNum,
+    sheet: null,
+    text: "",
+    extractionMethod: "vision",
+    skipped: true,
+    warning,
+  };
 }
 
-export async function extractPdfPages(filePath: string): Promise<ExtractedPage[]> {
+export async function extractPdfPages(
+  filePath: string,
+): Promise<ExtractedPage[]> {
   const uint8Array = readFileAsUint8Array(filePath);
   const pdfDoc = await getDocument({ data: uint8Array }).promise;
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -117,7 +136,12 @@ export async function extractPdfPages(filePath: string): Promise<ExtractedPage[]
     }
 
     if (visionCallCount >= MAX_VISION_PAGES) {
-      pages.push(makeSkippedPage(pageNum, `Page ${pageNum}: Vision cap of ${MAX_VISION_PAGES} reached`));
+      pages.push(
+        makeSkippedPage(
+          pageNum,
+          `Page ${pageNum}: Vision cap of ${MAX_VISION_PAGES} reached`,
+        ),
+      );
       continue;
     }
 
@@ -127,7 +151,9 @@ export async function extractPdfPages(filePath: string): Promise<ExtractedPage[]
       const content = await callVisionApi(openai, base64, pageNum);
 
       if (!content.trim()) {
-        pages.push(makeSkippedPage(pageNum, `Page ${pageNum}: no content extracted`));
+        pages.push(
+          makeSkippedPage(pageNum, `Page ${pageNum}: no content extracted`),
+        );
         continue;
       }
 
@@ -141,7 +167,12 @@ export async function extractPdfPages(filePath: string): Promise<ExtractedPage[]
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
-      pages.push(makeSkippedPage(pageNum, `Page ${pageNum}: vision extraction failed — ${msg}`));
+      pages.push(
+        makeSkippedPage(
+          pageNum,
+          `Page ${pageNum}: vision extraction failed — ${msg}`,
+        ),
+      );
     }
   }
 

@@ -1,14 +1,19 @@
 /**
  * @jest-environment node
  */
-import type { NextApiRequest, NextApiResponse } from "next";
+
 import type { Tool } from "@anthropic-ai/sdk/resources";
+import type { NextApiRequest, NextApiResponse } from "next";
 
 const MOCK_TOOLS: Tool[] = [
   {
     name: "get_top_expensive_items",
     description: "Returns the top N most expensive bid items by total cost.",
-    input_schema: { type: "object", properties: { n: { type: "number" } }, required: ["n"] },
+    input_schema: {
+      type: "object",
+      properties: { n: { type: "number" } },
+      required: ["n"],
+    },
   },
 ];
 

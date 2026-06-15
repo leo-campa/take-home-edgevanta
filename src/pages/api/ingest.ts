@@ -40,7 +40,10 @@ async function saveUploadedFile(
   let oversized = false;
 
   await new Promise<void>((resolve, reject) => {
-    const bb = busboy({ headers: req.headers, limits: { fileSize: MAX_BYTES } });
+    const bb = busboy({
+      headers: req.headers,
+      limits: { fileSize: MAX_BYTES },
+    });
 
     bb.on("file", (_field, stream, info) => {
       filename = info.filename ?? "upload.csv";
@@ -68,9 +71,12 @@ async function saveUploadedFile(
   return { savedPath, filename, oversized };
 }
 
-function parseCsvRows(
-  csvContent: string,
-): { items: BidItem[]; skippedCount: number; warnings: string[]; columnMapping: Record<string, string> } {
+function parseCsvRows(csvContent: string): {
+  items: BidItem[];
+  skippedCount: number;
+  warnings: string[];
+  columnMapping: Record<string, string>;
+} {
   const parsed = Papa.parse<Record<string, string>>(csvContent, {
     header: true,
     skipEmptyLines: true,
@@ -106,7 +112,10 @@ export default async function handler(
   const uploadDir = process.env.UPLOAD_DIR ?? "./uploads";
   fs.mkdirSync(uploadDir, { recursive: true });
 
-  const { savedPath, filename, oversized } = await saveUploadedFile(req, uploadDir);
+  const { savedPath, filename, oversized } = await saveUploadedFile(
+    req,
+    uploadDir,
+  );
 
   if (oversized) {
     return res.status(413).json({ error: "File exceeds the 500 MB limit." });
@@ -119,7 +128,8 @@ export default async function handler(
   }
 
   const csvContent = fs.readFileSync(savedPath, "utf-8");
-  const { items, skippedCount, warnings, columnMapping } = parseCsvRows(csvContent);
+  const { items, skippedCount, warnings, columnMapping } =
+    parseCsvRows(csvContent);
 
   if (items.length === 0) {
     return res.status(422).json({

@@ -15,7 +15,10 @@ function formatTime(timestamp: number): string {
   });
 }
 
-export default function MessageBubble({ message, onRetry }: MessageBubbleProps) {
+export default function MessageBubble({
+  message,
+  onRetry,
+}: MessageBubbleProps) {
   const { role, type, content, timestamp } = message;
   const [copied, setCopied] = useState(false);
 
@@ -47,7 +50,12 @@ export default function MessageBubble({ message, onRetry }: MessageBubbleProps) 
       className="message-bubble-component__retry-btn"
       onClick={onRetry}
       variant="text"
-      sx={{ fontSize: "0.7rem", minWidth: "auto", padding: "0 4px 4px", lineHeight: 1 }}
+      sx={{
+        fontSize: "0.7rem",
+        minWidth: "auto",
+        padding: "0 4px 4px",
+        lineHeight: 1,
+      }}
     >
       Retry
     </Button>
@@ -60,7 +68,11 @@ export default function MessageBubble({ message, onRetry }: MessageBubbleProps) 
       size="small"
       aria-label="Copy message"
     >
-      {copied ? <CheckIcon fontSize="inherit" /> : <ContentCopyIcon fontSize="inherit" />}
+      {copied ? (
+        <CheckIcon fontSize="inherit" />
+      ) : (
+        <ContentCopyIcon fontSize="inherit" />
+      )}
     </IconButton>
   );
 

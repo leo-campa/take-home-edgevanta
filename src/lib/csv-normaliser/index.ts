@@ -76,7 +76,15 @@ const CANONICAL_MAP: Record<string, keyof BidItem> = {
 };
 
 // Fields that should remain as strings rather than parsed as numbers
-const STRING_FIELDS = new Set<keyof BidItem>(["item_number", "description", "unit", "project_id", "let_date", "county", "bidder"]);
+const STRING_FIELDS = new Set<keyof BidItem>([
+  "item_number",
+  "description",
+  "unit",
+  "project_id",
+  "let_date",
+  "county",
+  "bidder",
+]);
 
 export function normaliseHeader(raw: string): string {
   return raw

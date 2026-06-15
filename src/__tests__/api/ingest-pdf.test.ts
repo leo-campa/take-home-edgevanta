@@ -125,20 +125,26 @@ function makeChunk(overrides: Partial<ContentChunk> = {}): ContentChunk {
 
 /** Simulate a successful multipart file upload through the busboy mock. */
 function triggerFileUpload(filename: string, mimeType: string) {
-  bbCallbacks["file"]?.("file", mockStream, { filename, mimeType });
-  wsCallbacks["finish"]?.();
+  bbCallbacks.file?.("file", mockStream, { filename, mimeType });
+  wsCallbacks.finish?.();
 }
 
 /** Simulate busboy finishing without sending any file (no-file scenario). */
 function triggerNoFile() {
-  bbCallbacks["close"]?.();
+  bbCallbacks.close?.();
 }
 
 beforeEach(() => {
   jest.clearAllMocks();
-  Object.keys(bbCallbacks).forEach((k) => delete bbCallbacks[k]);
-  Object.keys(wsCallbacks).forEach((k) => delete wsCallbacks[k]);
-  Object.keys(streamCallbacks).forEach((k) => delete streamCallbacks[k]);
+  Object.keys(bbCallbacks).forEach((k) => {
+    delete bbCallbacks[k];
+  });
+  Object.keys(wsCallbacks).forEach((k) => {
+    delete wsCallbacks[k];
+  });
+  Object.keys(streamCallbacks).forEach((k) => {
+    delete streamCallbacks[k];
+  });
 
   mockBB.on.mockImplementation((event: string, cb: BbCallback) => {
     bbCallbacks[event] = cb;
@@ -187,12 +193,12 @@ describe("POST /api/ingest-pdf", () => {
   it("returns 413 when the file exceeds the size limit", async () => {
     const res = buildMockRes();
     const promise = handler(buildReq(), res);
-    bbCallbacks["file"]?.("file", mockStream, {
+    bbCallbacks.file?.("file", mockStream, {
       filename: "big.pdf",
       mimeType: "application/pdf",
     });
-    streamCallbacks["limit"]?.();
-    wsCallbacks["finish"]?.();
+    streamCallbacks.limit?.();
+    wsCallbacks.finish?.();
     await promise;
     expect(res.status).toHaveBeenCalledWith(413);
   });
