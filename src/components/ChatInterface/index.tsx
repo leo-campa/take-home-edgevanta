@@ -6,7 +6,6 @@ import MessageList from "@/components/MessageList";
 import PdfUpload from "@/components/PdfUpload";
 import type { PdfIngestionResult } from "@/components/PdfUpload/model";
 import { useChat } from "@/hooks/useChat";
-import styles from "./chat-interface.component.module.scss";
 
 export default function ChatInterface() {
   const { messages, isStreaming, sendQuestion, addMessage } = useChat();
@@ -68,17 +67,17 @@ export default function ChatInterface() {
   }
 
   return (
-    <div className={styles["chat-interface-component"]}>
-      <header className={styles["chat-interface-component__topbar"]}>
-        <span className={styles["chat-interface-component__topbar-title"]}>
+    <div className="chat-interface-component">
+      <header className="chat-interface-component__topbar">
+        <span className="chat-interface-component__topbar-title">
           Agent Edgevanta
         </span>
       </header>
-      <div className={styles["chat-interface-component__message-area"]}>
+      <div className="chat-interface-component__message-area">
         <MessageList messages={messages} isStreaming={isStreaming} />
       </div>
-      <div className={styles["chat-interface-component__input-row"]}>
-        <div className={styles["chat-interface-component__upload-section"]}>
+      <div className="chat-interface-component__input-row">
+        <div className="chat-interface-component__upload-section">
           <PdfUpload
             onUpload={handlePdfUpload}
             onError={handlePdfUploadError}

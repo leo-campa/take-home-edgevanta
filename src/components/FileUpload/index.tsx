@@ -1,9 +1,8 @@
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import Button from "@mui/material/Button";
 import CircularProgress from "@mui/material/CircularProgress";
-import Typography from "@mui/material/Typography";
+import cx from "classnames";
 import { useRef, useState } from "react";
-import styles from "./file-upload.component.module.scss";
 import type { FileUploadProps, IngestionResult } from "./model";
 
 const MAX_BYTES = 524_288_000;
@@ -71,7 +70,7 @@ export default function FileUpload({
   }
 
   return (
-    <div className={styles["file-upload-component"]}>
+    <div className="file-upload-component">
       <input
         ref={inputRef}
         type="file"
@@ -88,11 +87,10 @@ export default function FileUpload({
         }
         onClick={() => inputRef.current?.click()}
         disabled={disabled || isLoading}
-        className={
-          isLoading
-            ? styles["file-upload-component__loading"]
-            : styles["file-upload-component__button"]
-        }
+        className={cx({
+          "file-upload-component__button": !isLoading,
+          "file-upload-component__loading": isLoading,
+        })}
         aria-busy={isLoading}
       >
         {isLoading ? "Uploading…" : "Upload CSV"}

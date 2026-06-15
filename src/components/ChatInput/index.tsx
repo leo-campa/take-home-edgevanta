@@ -3,7 +3,6 @@ import CircularProgress from "@mui/material/CircularProgress";
 import IconButton from "@mui/material/IconButton";
 import TextField from "@mui/material/TextField";
 import { useState } from "react";
-import styles from "./chat-input.component.module.scss";
 import type { ChatInputProps } from "./model";
 
 export default function ChatInput({
@@ -31,9 +30,9 @@ export default function ChatInput({
   }
 
   return (
-    <div className={styles["chat-input-component"]}>
+    <div className="chat-input-component">
       <TextField
-        className={styles["chat-input-component__text-field"]}
+        className="chat-input-component__text-field"
         fullWidth
         multiline
         maxRows={4}
@@ -47,7 +46,7 @@ export default function ChatInput({
         slotProps={{ input: { "aria-label": "Message input" } }}
       />
       <IconButton
-        className={styles["chat-input-component__send-button"]}
+        className="chat-input-component__send-button"
         onClick={handleSend}
         disabled={isDisabled}
         aria-label="Send message"
@@ -55,10 +54,7 @@ export default function ChatInput({
         data-testid="send-button"
       >
         {isStreaming ? (
-          <CircularProgress
-            size={20}
-            className={styles["chat-input-component__spinner"]}
-          />
+          <CircularProgress size={20} className="chat-input-component__spinner" />
         ) : (
           <SendIcon />
         )}
