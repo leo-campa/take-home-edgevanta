@@ -89,7 +89,9 @@ class VectorStore {
   getTopByTotalCost(n: number): BidItem[] {
     return [...this.state.csvEntries]
       .filter((e) => e.item.total_cost !== null)
-      .sort((a, b) => (b.item.total_cost as number) - (a.item.total_cost as number))
+      .sort(
+        (a, b) => (b.item.total_cost as number) - (a.item.total_cost as number),
+      )
       .slice(0, n)
       .map((e) => e.item);
   }
@@ -106,14 +108,21 @@ class VectorStore {
       if (prices.length < 3) continue;
 
       const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
-      const variance = prices.reduce((a, b) => a + (b - mean) ** 2, 0) / prices.length;
+      const variance =
+        prices.reduce((a, b) => a + (b - mean) ** 2, 0) / prices.length;
       const stddev = Math.sqrt(variance);
 
       for (const item of group) {
         if (item.unit_price === null) continue;
         const deviation = Math.abs(item.unit_price - mean) / stddev;
         if (deviation > thresholdStddev) {
-          results.push({ item, cluster_mean: mean, cluster_stddev: stddev, deviation_factor: deviation, cluster_size: group.length });
+          results.push({
+            item,
+            cluster_mean: mean,
+            cluster_stddev: stddev,
+            deviation_factor: deviation,
+            cluster_size: group.length,
+          });
         }
       }
     }
@@ -141,7 +150,8 @@ class VectorStore {
       byUnit[unitKey].count++;
 
       if (typeof item.quantity === "number") {
-        byUnit[unitKey].total_quantity = (byUnit[unitKey].total_quantity ?? 0) + item.quantity;
+        byUnit[unitKey].total_quantity =
+          (byUnit[unitKey].total_quantity ?? 0) + item.quantity;
       }
 
       if (typeof item.total_cost === "number") {

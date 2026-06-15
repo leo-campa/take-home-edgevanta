@@ -46,7 +46,10 @@ async function saveUploadedFile(
   let oversized = false;
 
   await new Promise<void>((resolve, reject) => {
-    const bb = busboy({ headers: req.headers, limits: { fileSize: MAX_BYTES } });
+    const bb = busboy({
+      headers: req.headers,
+      limits: { fileSize: MAX_BYTES },
+    });
 
     bb.on("file", (_field, stream, info) => {
       filename = info.filename ?? "upload.pdf";
@@ -78,8 +81,12 @@ async function saveUploadedFile(
 
 function getPageStats(pages: ExtractedPage[]) {
   return {
-    native_pages: pages.filter((p) => !p.skipped && p.extractionMethod === "native").length,
-    vision_pages: pages.filter((p) => !p.skipped && p.extractionMethod === "vision").length,
+    native_pages: pages.filter(
+      (p) => !p.skipped && p.extractionMethod === "native",
+    ).length,
+    vision_pages: pages.filter(
+      (p) => !p.skipped && p.extractionMethod === "vision",
+    ).length,
     skipped_pages: pages.filter((p) => p.skipped).length,
     warnings: pages.flatMap((p) => (p.warning ? [p.warning] : [])),
   };
@@ -96,7 +103,10 @@ export default async function handler(
   const uploadDir = process.env.PDF_UPLOAD_DIR ?? "./uploads-pdf";
   fs.mkdirSync(uploadDir, { recursive: true });
 
-  const { savedPath, filename, mimeType, oversized } = await saveUploadedFile(req, uploadDir);
+  const { savedPath, filename, mimeType, oversized } = await saveUploadedFile(
+    req,
+    uploadDir,
+  );
 
   if (oversized) {
     return res.status(413).json({ error: "File exceeds the 500 MB limit." });
@@ -132,7 +142,8 @@ export default async function handler(
   }
 
   const chunks = chunkExtractedPages(pages);
-  const { native_pages, vision_pages, skipped_pages, warnings } = getPageStats(pages);
+  const { native_pages, vision_pages, skipped_pages, warnings } =
+    getPageStats(pages);
 
   const pdfMeta: PdfDatasetMetadata = {
     filename,

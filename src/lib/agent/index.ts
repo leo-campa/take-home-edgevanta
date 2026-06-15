@@ -95,56 +95,65 @@ export const TOOLS: Anthropic.Tool[] = [
   },
   {
     name: "summarize_by_bidder",
-    description: "Summarises total bid amounts and extended costs grouped by bidder/contractor. Use this to compare overall contractor bids or find who submitted the lowest total. Always pass project_id when the user mentions a specific project to avoid mixing results across projects.",
+    description:
+      "Summarises total bid amounts and extended costs grouped by bidder/contractor. Use this to compare overall contractor bids or find who submitted the lowest total. Always pass project_id when the user mentions a specific project to avoid mixing results across projects.",
     input_schema: {
       type: "object" as const,
       properties: {
         project_id: {
           type: "string",
-          description: "Optional project ID to scope results to a single project",
+          description:
+            "Optional project ID to scope results to a single project",
         },
       },
     },
   },
   {
     name: "compare_bidders",
-    description: "Shows a side-by-side unit price comparison for each bid item across all bidders, sorted by bid rank. Always pass project_id when the user mentions a specific project to avoid mixing results across projects.",
+    description:
+      "Shows a side-by-side unit price comparison for each bid item across all bidders, sorted by bid rank. Always pass project_id when the user mentions a specific project to avoid mixing results across projects.",
     input_schema: {
       type: "object" as const,
       properties: {
         item_number: {
           type: "string",
-          description: "Optional item number to filter the comparison to a single item",
+          description:
+            "Optional item number to filter the comparison to a single item",
         },
         project_id: {
           type: "string",
-          description: "Optional project ID to scope results to a single project",
+          description:
+            "Optional project ID to scope results to a single project",
         },
       },
     },
   },
   {
     name: "get_lowest_bidder",
-    description: "Returns the winning bidder (bid rank 1) and their total bid amount. Use when asked who won the bid or which contractor had the lowest price. Always pass project_id when the user mentions a specific project.",
+    description:
+      "Returns the winning bidder (bid rank 1) and their total bid amount. Use when asked who won the bid or which contractor had the lowest price. Always pass project_id when the user mentions a specific project.",
     input_schema: {
       type: "object" as const,
       properties: {
         project_id: {
           type: "string",
-          description: "Optional project ID to scope results to a single project",
+          description:
+            "Optional project ID to scope results to a single project",
         },
       },
     },
   },
   {
     name: "compare_bid_vs_estimate",
-    description: "Compares each bidder's unit price against the engineer's estimate, showing variance in dollars and percentage. Only returns items where an engineer estimate is available. Always pass project_id when the user mentions a specific project.",
+    description:
+      "Compares each bidder's unit price against the engineer's estimate, showing variance in dollars and percentage. Only returns items where an engineer estimate is available. Always pass project_id when the user mentions a specific project.",
     input_schema: {
       type: "object" as const,
       properties: {
         project_id: {
           type: "string",
-          description: "Optional project ID to scope results to a single project",
+          description:
+            "Optional project ID to scope results to a single project",
         },
       },
     },
@@ -194,7 +203,9 @@ export async function executeTool(
 
     case "get_average_unit_price": {
       const filter = input.filter as string | undefined;
-      return JSON.stringify({ average_unit_price: getAverageUnitPrice(items, filter) });
+      return JSON.stringify({
+        average_unit_price: getAverageUnitPrice(items, filter),
+      });
     }
 
     case "summarize_by_bidder": {
@@ -246,19 +257,26 @@ export async function executeTool(
 async function runToolCalls(
   content: Anthropic.ContentBlock[],
 ): Promise<Anthropic.ToolResultBlockParam[]> {
-  const toolUseBlocks = content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
+  const toolUseBlocks = content.filter(
+    (b): b is Anthropic.ToolUseBlock => b.type === "tool_use",
+  );
 
   return Promise.all(
     toolUseBlocks.map(async (block) => ({
       type: "tool_result" as const,
       tool_use_id: block.id,
-      content: await executeTool(block.name, block.input as Record<string, unknown>)
-        .catch((err: unknown) => JSON.stringify({ error: String(err) })),
+      content: await executeTool(
+        block.name,
+        block.input as Record<string, unknown>,
+      ).catch((err: unknown) => JSON.stringify({ error: String(err) })),
     })),
   );
 }
 
-function emitTextBlocks(content: Anthropic.ContentBlock[], onToken: (token: string) => void) {
+function emitTextBlocks(
+  content: Anthropic.ContentBlock[],
+  onToken: (token: string) => void,
+) {
   for (const block of content) {
     if (block.type === "text") onToken(block.text);
   }
@@ -271,12 +289,20 @@ export async function runAgent(
   const store = getStore();
 
   if (store.isEmpty()) {
-    onToken("No data has been loaded. Please upload a CSV file (bid data) or a PDF (plan documents), or both.");
+    onToken(
+      "No data has been loaded. Please upload a CSV file (bid data) or a PDF (plan documents), or both.",
+    );
     return;
   }
 
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 3, timeout: 90_000 });
-  const messages: Anthropic.MessageParam[] = [{ role: "user", content: question }];
+  const client = new Anthropic({
+    apiKey: process.env.ANTHROPIC_API_KEY,
+    maxRetries: 3,
+    timeout: 90_000,
+  });
+  const messages: Anthropic.MessageParam[] = [
+    { role: "user", content: question },
+  ];
 
   while (true) {
     const response = await client.messages.create({

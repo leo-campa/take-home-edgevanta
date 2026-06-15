@@ -1,5 +1,11 @@
 import type { BidItem } from "@/lib/csv-normaliser/model";
-import type { BidderComparison, BidderSummary, BidVsEstimate, OutlierResult, QuantitySummary } from "./model";
+import type {
+  BidderComparison,
+  BidderSummary,
+  BidVsEstimate,
+  OutlierResult,
+  QuantitySummary,
+} from "./model";
 
 function groupByDescription(items: BidItem[]): Record<string, BidItem[]> {
   const groups: Record<string, BidItem[]> = {};
@@ -13,7 +19,8 @@ function groupByDescription(items: BidItem[]): Record<string, BidItem[]> {
 
 function computeStats(prices: number[]): { mean: number; stddev: number } {
   const mean = prices.reduce((a, b) => a + b, 0) / prices.length;
-  const variance = prices.reduce((a, b) => a + (b - mean) ** 2, 0) / prices.length;
+  const variance =
+    prices.reduce((a, b) => a + (b - mean) ** 2, 0) / prices.length;
   return { mean, stddev: Math.sqrt(variance) };
 }
 
@@ -76,7 +83,8 @@ export function summarizeQuantities(items: BidItem[]): QuantitySummary {
     byUnit[unitKey].count++;
 
     if (typeof item.quantity === "number") {
-      byUnit[unitKey].total_quantity = (byUnit[unitKey].total_quantity ?? 0) + item.quantity;
+      byUnit[unitKey].total_quantity =
+        (byUnit[unitKey].total_quantity ?? 0) + item.quantity;
     }
 
     if (typeof item.total_cost === "number") {
@@ -98,7 +106,10 @@ function filterByProject(items: BidItem[], projectId?: string): BidItem[] {
   return items.filter((item) => item.project_id === projectId);
 }
 
-export function summarizeByBidder(items: BidItem[], projectId?: string): BidderSummary[] {
+export function summarizeByBidder(
+  items: BidItem[],
+  projectId?: string,
+): BidderSummary[] {
   const projectItems = filterByProject(items, projectId);
   const byBidder: Record<string, BidderSummary> = {};
 
@@ -132,7 +143,11 @@ export function summarizeByBidder(items: BidItem[], projectId?: string): BidderS
   );
 }
 
-export function compareBidders(items: BidItem[], itemNumber?: string, projectId?: string): BidderComparison[] {
+export function compareBidders(
+  items: BidItem[],
+  itemNumber?: string,
+  projectId?: string,
+): BidderComparison[] {
   const projectItems = filterByProject(items, projectId);
   const targetItems = itemNumber
     ? projectItems.filter((item) => item.item_number === itemNumber)
@@ -163,7 +178,10 @@ export function compareBidders(items: BidItem[], itemNumber?: string, projectId?
   });
 }
 
-export function getLowestBidder(items: BidItem[], projectId?: string): BidderSummary[] {
+export function getLowestBidder(
+  items: BidItem[],
+  projectId?: string,
+): BidderSummary[] {
   const projectItems = filterByProject(items, projectId);
   const winners = projectItems.filter((item) => item.bid_rank === 1);
 
@@ -172,7 +190,10 @@ export function getLowestBidder(items: BidItem[], projectId?: string): BidderSum
   return summarizeByBidder(itemsToSummarize);
 }
 
-export function compareBidVsEstimate(items: BidItem[], projectId?: string): BidVsEstimate[] {
+export function compareBidVsEstimate(
+  items: BidItem[],
+  projectId?: string,
+): BidVsEstimate[] {
   const projectItems = filterByProject(items, projectId);
 
   const itemsWithBothPrices = projectItems.filter(
@@ -202,7 +223,9 @@ export function compareBidVsEstimate(items: BidItem[], projectId?: string): BidV
 
 export function getAverageUnitPrice(items: BidItem[], filter?: string): number {
   const filtered = filter
-    ? items.filter((i) => i.description?.toLowerCase().includes(filter.toLowerCase()))
+    ? items.filter((i) =>
+        i.description?.toLowerCase().includes(filter.toLowerCase()),
+      )
     : items;
 
   const prices = filtered

@@ -2,14 +2,21 @@ import { useEffect, useMemo, useRef } from "react";
 import MessageBubble from "@/components/MessageBubble";
 import type { MessageListProps } from "./model";
 
-export default function MessageList({ messages, isStreaming, onRetry }: MessageListProps) {
+export default function MessageList({
+  messages,
+  isStreaming,
+  onRetry,
+}: MessageListProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
-  const cleanedMessages = useMemo(() => messages.filter((m) => m.content !== ""), [messages]);
+  const cleanedMessages = useMemo(
+    () => messages.filter((m) => m.content !== ""),
+    [messages],
+  );
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, []);
 
   return (
     <div className="message-list-component">
@@ -23,9 +30,7 @@ export default function MessageList({ messages, isStreaming, onRetry }: MessageL
             />
           ))}
           {isStreaming && (
-            <div className="message-list-component__thinking">
-              Thinking…
-            </div>
+            <div className="message-list-component__thinking">Thinking…</div>
           )}
         </div>
         <div ref={bottomRef} aria-hidden="true" />

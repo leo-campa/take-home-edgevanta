@@ -54,7 +54,10 @@ export default function ChatInput({
         data-testid="send-button"
       >
         {isStreaming ? (
-          <CircularProgress size={20} className="chat-input-component__spinner" />
+          <CircularProgress
+            size={20}
+            className="chat-input-component__spinner"
+          />
         ) : (
           <SendIcon />
         )}

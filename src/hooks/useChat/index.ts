@@ -34,7 +34,10 @@ function handleSseEvent(
       setIsStreaming(false);
       break;
     case "error":
-      updateAgent(agentId, { type: "error", content: `Error: ${event.message}` });
+      updateAgent(agentId, {
+        type: "error",
+        content: `Error: ${event.message}`,
+      });
       setIsStreaming(false);
       break;
     case "no_data":
@@ -115,13 +118,24 @@ export function useChat(): ChatState & {
             if (event.type === "token") {
               appendAgentToken(agentId, event.content);
             } else {
-              handleSseEvent(event, agentId, updateAgentMessage, setIsStreaming);
+              handleSseEvent(
+                event,
+                agentId,
+                updateAgentMessage,
+                setIsStreaming,
+              );
             }
           }
         }
       } catch (err) {
-        console.error("useChat error:", err instanceof Error ? err.message : err);
-        updateAgentMessage(agentId, { type: "error", content: "Connection lost — please try again" });
+        console.error(
+          "useChat error:",
+          err instanceof Error ? err.message : err,
+        );
+        updateAgentMessage(agentId, {
+          type: "error",
+          content: "Connection lost — please try again",
+        });
         setIsStreaming(false);
       }
     },
@@ -132,5 +146,11 @@ export function useChat(): ChatState & {
     if (lastQuestion) void sendQuestion(lastQuestion);
   }, [lastQuestion, sendQuestion]);
 
-  return { messages, isStreaming, retryLast: lastQuestion ? retryLast : null, sendQuestion, addMessage };
+  return {
+    messages,
+    isStreaming,
+    retryLast: lastQuestion ? retryLast : null,
+    sendQuestion,
+    addMessage,
+  };
 }

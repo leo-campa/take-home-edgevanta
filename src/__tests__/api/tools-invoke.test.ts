@@ -33,14 +33,21 @@ describe("POST /api/tools/invoke", () => {
     mockExecuteTool.mockResolvedValue(JSON.stringify(items));
 
     const res = buildMockRes();
-    await handler(buildReq({ name: "get_top_expensive_items", input: { n: 1 } }), res);
+    await handler(
+      buildReq({ name: "get_top_expensive_items", input: { n: 1 } }),
+      res,
+    );
 
-    expect(mockExecuteTool).toHaveBeenCalledWith("get_top_expensive_items", { n: 1 });
+    expect(mockExecuteTool).toHaveBeenCalledWith("get_top_expensive_items", {
+      n: 1,
+    });
     expect(res.json).toHaveBeenCalledWith({ result: items });
   });
 
   it("defaults input to empty object when omitted", async () => {
-    mockExecuteTool.mockResolvedValue(JSON.stringify({ average_unit_price: 42 }));
+    mockExecuteTool.mockResolvedValue(
+      JSON.stringify({ average_unit_price: 42 }),
+    );
 
     const res = buildMockRes();
     await handler(buildReq({ name: "get_average_unit_price" }), res);
