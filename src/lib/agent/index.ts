@@ -1,8 +1,12 @@
 import Anthropic from "@anthropic-ai/sdk";
 import {
+  compareBidders,
+  compareBidVsEstimate,
   detectPriceOutliers,
   getAverageUnitPrice,
+  getLowestBidder,
   getTopExpensiveItems,
+  summarizeByBidder,
   summarizeQuantities,
 } from "@/lib/analytics";
 import { generateEmbeddings } from "@/lib/embeddings";
@@ -12,8 +16,9 @@ const MODEL = "claude-sonnet-4-6";
 
 const SYSTEM_PROMPT = `You are an expert construction estimator assistant with access to two data sources:
 
-1. CSV Bid Data (structured): Contains bid items with quantities, unit prices, and totals.
+1. CSV Bid Data (structured): Contains bid items with quantities, unit prices, totals, bidder names, bid ranks, and engineer estimates.
    - Use get_top_expensive_items, detect_price_outliers, summarize_quantities, get_average_unit_price for analytical questions
+   - Use summarize_by_bidder, compare_bidders, get_lowest_bidder, compare_bid_vs_estimate for bid tabulation analysis
    - Use query_bid_data for semantic search over bid item descriptions
 
 2. Plan Documents (unstructured): Extracted text from construction plan-set PDFs, including sheet notes, specifications, quantities, and requirements.
@@ -89,6 +94,62 @@ export const TOOLS: Anthropic.Tool[] = [
     },
   },
   {
+    name: "summarize_by_bidder",
+    description: "Summarises total bid amounts and extended costs grouped by bidder/contractor. Use this to compare overall contractor bids or find who submitted the lowest total. Always pass project_id when the user mentions a specific project to avoid mixing results across projects.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        project_id: {
+          type: "string",
+          description: "Optional project ID to scope results to a single project",
+        },
+      },
+    },
+  },
+  {
+    name: "compare_bidders",
+    description: "Shows a side-by-side unit price comparison for each bid item across all bidders, sorted by bid rank. Always pass project_id when the user mentions a specific project to avoid mixing results across projects.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        item_number: {
+          type: "string",
+          description: "Optional item number to filter the comparison to a single item",
+        },
+        project_id: {
+          type: "string",
+          description: "Optional project ID to scope results to a single project",
+        },
+      },
+    },
+  },
+  {
+    name: "get_lowest_bidder",
+    description: "Returns the winning bidder (bid rank 1) and their total bid amount. Use when asked who won the bid or which contractor had the lowest price. Always pass project_id when the user mentions a specific project.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        project_id: {
+          type: "string",
+          description: "Optional project ID to scope results to a single project",
+        },
+      },
+    },
+  },
+  {
+    name: "compare_bid_vs_estimate",
+    description: "Compares each bidder's unit price against the engineer's estimate, showing variance in dollars and percentage. Only returns items where an engineer estimate is available. Always pass project_id when the user mentions a specific project.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        project_id: {
+          type: "string",
+          description: "Optional project ID to scope results to a single project",
+        },
+      },
+    },
+  },
+  {
     name: "search_plan_documents",
     description:
       "Performs semantic search over uploaded construction plan documents (PDFs). Returns the most relevant sections including sheet numbers, notes, specifications, and quantities. Use this when the user asks about plan requirements, specifications, notes, quantities, or drawing details.",
@@ -134,6 +195,27 @@ export async function executeTool(
     case "get_average_unit_price": {
       const filter = input.filter as string | undefined;
       return JSON.stringify({ average_unit_price: getAverageUnitPrice(items, filter) });
+    }
+
+    case "summarize_by_bidder": {
+      const projectId = input.project_id as string | undefined;
+      return JSON.stringify(summarizeByBidder(items, projectId));
+    }
+
+    case "compare_bidders": {
+      const itemNumber = input.item_number as string | undefined;
+      const projectId = input.project_id as string | undefined;
+      return JSON.stringify(compareBidders(items, itemNumber, projectId));
+    }
+
+    case "get_lowest_bidder": {
+      const projectId = input.project_id as string | undefined;
+      return JSON.stringify(getLowestBidder(items, projectId));
+    }
+
+    case "compare_bid_vs_estimate": {
+      const projectId = input.project_id as string | undefined;
+      return JSON.stringify(compareBidVsEstimate(items, projectId));
     }
 
     case "query_bid_data": {

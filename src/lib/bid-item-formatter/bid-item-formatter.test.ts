@@ -9,6 +9,13 @@ const fullItem: BidItem = {
   unit: "LF",
   unit_price: 50,
   total_cost: 5000,
+  project_id: null,
+  let_date: null,
+  county: null,
+  engineer_estimate: null,
+  bidder: null,
+  bid_rank: null,
+  bid_total: null,
   extra_fields: { notes: "rush order" },
   raw_row: {},
 };

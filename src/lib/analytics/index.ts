@@ -1,5 +1,5 @@
 import type { BidItem } from "@/lib/csv-normaliser/model";
-import type { OutlierResult, QuantitySummary } from "./model";
+import type { BidderComparison, BidderSummary, BidVsEstimate, OutlierResult, QuantitySummary } from "./model";
 
 function groupByDescription(items: BidItem[]): Record<string, BidItem[]> {
   const groups: Record<string, BidItem[]> = {};
@@ -91,6 +91,113 @@ export function summarizeQuantities(items: BidItem[]): QuantitySummary {
     items_with_missing_quantity: missingQty,
     by_unit: byUnit,
   };
+}
+
+function filterByProject(items: BidItem[], projectId?: string): BidItem[] {
+  if (!projectId) return items;
+  return items.filter((item) => item.project_id === projectId);
+}
+
+export function summarizeByBidder(items: BidItem[], projectId?: string): BidderSummary[] {
+  const projectItems = filterByProject(items, projectId);
+  const byBidder: Record<string, BidderSummary> = {};
+
+  for (const item of projectItems) {
+    const bidderName = item.bidder ?? "__unknown__";
+
+    if (!byBidder[bidderName]) {
+      byBidder[bidderName] = {
+        bidder: bidderName,
+        bid_total: null,
+        total_ext_amt: 0,
+        item_count: 0,
+      };
+    }
+
+    const summary = byBidder[bidderName];
+    summary.item_count++;
+
+    if (typeof item.total_cost === "number") {
+      summary.total_ext_amt += item.total_cost;
+    }
+
+    // bid_total is the same for all rows of the same bidder+project — capture it once
+    if (typeof item.bid_total === "number" && summary.bid_total === null) {
+      summary.bid_total = item.bid_total;
+    }
+  }
+
+  return Object.values(byBidder).sort(
+    (a, b) => (a.bid_total ?? Infinity) - (b.bid_total ?? Infinity),
+  );
+}
+
+export function compareBidders(items: BidItem[], itemNumber?: string, projectId?: string): BidderComparison[] {
+  const projectItems = filterByProject(items, projectId);
+  const targetItems = itemNumber
+    ? projectItems.filter((item) => item.item_number === itemNumber)
+    : projectItems;
+
+  const groupedByItem: Record<string, BidItem[]> = {};
+  for (const item of targetItems) {
+    const key = item.item_number ?? item.description ?? "__unknown__";
+    if (!groupedByItem[key]) groupedByItem[key] = [];
+    groupedByItem[key].push(item);
+  }
+
+  return Object.values(groupedByItem).map((bids) => {
+    const sortedByRank = [...bids].sort(
+      (a, b) => (a.bid_rank ?? 999) - (b.bid_rank ?? 999),
+    );
+
+    return {
+      item_number: bids[0].item_number,
+      description: bids[0].description,
+      bids: sortedByRank.map((b) => ({
+        bidder: b.bidder,
+        bid_rank: b.bid_rank,
+        unit_price: b.unit_price,
+        total_cost: b.total_cost,
+      })),
+    };
+  });
+}
+
+export function getLowestBidder(items: BidItem[], projectId?: string): BidderSummary[] {
+  const projectItems = filterByProject(items, projectId);
+  const winners = projectItems.filter((item) => item.bid_rank === 1);
+
+  // Fall back to all items if no bid_rank data is present
+  const itemsToSummarize = winners.length > 0 ? winners : projectItems;
+  return summarizeByBidder(itemsToSummarize);
+}
+
+export function compareBidVsEstimate(items: BidItem[], projectId?: string): BidVsEstimate[] {
+  const projectItems = filterByProject(items, projectId);
+
+  const itemsWithBothPrices = projectItems.filter(
+    (item) =>
+      typeof item.unit_price === "number" &&
+      typeof item.engineer_estimate === "number" &&
+      item.engineer_estimate !== 0,
+  );
+
+  return itemsWithBothPrices.map((item) => {
+    const unitPrice = item.unit_price as number;
+    const engineerEstimate = item.engineer_estimate as number;
+    const variance = unitPrice - engineerEstimate;
+
+    return {
+      item_number: item.item_number,
+      description: item.description,
+      bidder: item.bidder,
+      bid_rank: item.bid_rank,
+      unit_price: unitPrice,
+      engineer_estimate: engineerEstimate,
+      variance,
+      variance_pct: (variance / engineerEstimate) * 100,
+    };
+  });
 }
 
 export function getAverageUnitPrice(items: BidItem[], filter?: string): number {
