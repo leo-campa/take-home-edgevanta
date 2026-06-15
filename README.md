@@ -38,7 +38,7 @@ npm run dev
 
 Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
-Upload a CSV (bid data) or a PDF (construction plan set) — or both — using the upload buttons in the chat interface. Once data is loaded, type a question and the agent will respond using the relevant sources.
+Upload a CSV (bid data, max 100 MB) or a PDF (construction plan set) — or both — using the upload buttons in the chat interface. Once data is loaded, type a question and the agent will respond using the relevant sources. Agent messages include a copy-to-clipboard button; if a request fails, a Retry button appears to resend the last question.
 
 The agent's tools are also available as a standalone HTTP API:
 
@@ -73,7 +73,10 @@ npm run test:watch
 CSV bid data and PDF plan documents live in independent partitions of the same in-memory store. Uploading one file type never clears the other. The agent searches both partitions on every query and combines results, so an estimator can ask cross-source questions (e.g. "Are the drainage quantities in the bid consistent with the plan notes?").
 
 **Tool-use agent loop**
-The Claude agent runs in a tool-use loop and decides which tools to call based on the question — no hardcoded routing. Analytical tools (`get_top_expensive_items`, `detect_price_outliers`, `summarize_quantities`, `get_average_unit_price`) handle structured bid data; semantic search tools (`query_bid_data`, `search_plan_documents`) handle freeform retrieval from both partitions.
+The Claude agent runs in a tool-use loop and decides which tools to call based on the question — no hardcoded routing. Analytical tools handle structured bid data: `get_top_expensive_items`, `detect_price_outliers`, `summarize_quantities`, `get_average_unit_price` for single-project analysis, plus `summarize_by_bidder`, `compare_bidders`, `get_lowest_bidder`, and `compare_bid_vs_estimate` for multi-contractor bid tabulation. Semantic search tools (`query_bid_data`, `search_plan_documents`) handle freeform retrieval from both vector-store partitions. The CSV normaliser maps 40+ real-world column aliases (e.g. `unit_pr`, `cnty`, `eng_est_unit_pr`) onto a canonical BidItem schema that now includes `project_id`, `let_date`, `county`, `engineer_estimate`, `bidder`, `bid_rank`, and `bid_total`; bidder tools are scoped by `project_id` to prevent cross-project data mixing.
+
+**Agent resilience**
+The Anthropic client is configured with 3 automatic retries and a 90-second timeout per request to recover from transient API failures. Tool execution errors are isolated so Claude can respond gracefully rather than crashing the entire request. When a request does fail on the client, an error bubble with a Retry button lets the user resend the last question in one click.
 
 **Programmatic tool API**
 `GET /api/tools` exposes the full tool catalog with input schemas. `POST /api/tools/invoke` lets any external system call a tool directly by name with structured input and receive structured JSON back. This means the agent's capabilities are operable by another LLM or orchestration system without going through the natural-language chat endpoint.
