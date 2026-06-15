@@ -23,6 +23,35 @@ export type QuantitySummary = {
   >;
 };
 
+export type BidderSummary = {
+  bidder: string;
+  bid_total: number | null;
+  total_ext_amt: number;
+  item_count: number;
+};
+
+export type BidderComparison = {
+  item_number: string | null;
+  description: string | null;
+  bids: {
+    bidder: string | null;
+    bid_rank: number | null;
+    unit_price: number | null;
+    total_cost: number | null;
+  }[];
+};
+
+export type BidVsEstimate = {
+  item_number: string | null;
+  description: string | null;
+  bidder: string | null;
+  bid_rank: number | null;
+  unit_price: number;
+  engineer_estimate: number;
+  variance: number;
+  variance_pct: number | null;
+};
+
 export type AgentChatResponse = {
   answer: string;
 };

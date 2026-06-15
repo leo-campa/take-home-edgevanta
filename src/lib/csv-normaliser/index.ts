@@ -1,27 +1,82 @@
 import type { BidItem, ColumnMapping } from "./model";
 
 const CANONICAL_MAP: Record<string, keyof BidItem> = {
+  // item_number
   item_no: "item_number",
   item_number: "item_number",
   item: "item_number",
+  line: "item_number",
+  line_no: "item_number",
+  bid_item: "item_number",
+  // description
   description: "description",
   desc: "description",
   item_desc: "description",
+  work_description: "description",
+  scope: "description",
+  // quantity
   qty: "quantity",
   quantity: "quantity",
+  qnty: "quantity",
+  quant: "quantity",
+  count: "quantity",
+  // unit
+  unit: "unit",
+  uom: "unit",
+  measure: "unit",
+  unit_of_measure: "unit",
+  u_m: "unit",
+  // unit_price
   unit_price: "unit_price",
   unit_prc: "unit_price",
   uprice: "unit_price",
+  unit_pr: "unit_price",
+  price: "unit_price",
+  rate: "unit_price",
+  unit_rate: "unit_price",
+  // total_cost
   total: "total_cost",
   total_cost: "total_cost",
   ext_amt: "total_cost",
   amount: "total_cost",
-  unit: "unit",
-  uom: "unit",
+  extended: "total_cost",
+  ext_cost: "total_cost",
+  line_total: "total_cost",
+  total_amount: "total_cost",
+  // project_id
+  proj_id: "project_id",
+  project_id: "project_id",
+  project_no: "project_id",
+  // let_date
+  let_dt: "let_date",
+  let_date: "let_date",
+  letting_date: "let_date",
+  // county
+  cnty: "county",
+  county: "county",
+  location: "county",
+  area: "county",
+  // engineer_estimate
+  eng_est_unit_pr: "engineer_estimate",
+  engineer_estimate: "engineer_estimate",
+  eng_est: "engineer_estimate",
+  est_unit_price: "engineer_estimate",
+  // bidder
+  bidder: "bidder",
+  contractor: "bidder",
+  company: "bidder",
+  bidder_name: "bidder",
+  // bid_rank
+  bid_rank: "bid_rank",
+  rank: "bid_rank",
+  ranking: "bid_rank",
+  // bid_total
+  bid_total: "bid_total",
+  total_bid: "bid_total",
 };
 
 // Fields that should remain as strings rather than parsed as numbers
-const STRING_FIELDS = new Set<keyof BidItem>(["item_number", "description", "unit"]);
+const STRING_FIELDS = new Set<keyof BidItem>(["item_number", "description", "unit", "project_id", "let_date", "county", "bidder"]);
 
 export function normaliseHeader(raw: string): string {
   return raw
@@ -55,6 +110,13 @@ export function normaliseRow(
     unit: null,
     unit_price: null,
     total_cost: null,
+    project_id: null,
+    let_date: null,
+    county: null,
+    engineer_estimate: null,
+    bidder: null,
+    bid_rank: null,
+    bid_total: null,
     extra_fields: {},
     raw_row: rawRow,
   };

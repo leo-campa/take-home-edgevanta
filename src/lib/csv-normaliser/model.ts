@@ -6,6 +6,13 @@ export type BidItem = {
   unit: string | null;
   unit_price: number | null;
   total_cost: number | null;
+  project_id: string | null;
+  let_date: string | null;
+  county: string | null;
+  engineer_estimate: number | null;
+  bidder: string | null;
+  bid_rank: number | null;
+  bid_total: number | null;
   extra_fields: Record<string, string | number | null>;
   raw_row: Record<string, string>;
 };
