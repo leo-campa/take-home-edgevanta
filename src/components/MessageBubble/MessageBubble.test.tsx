@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import type { Message } from "@/hooks/useChat/model";
 import MessageBubble from "./index";
 
@@ -48,5 +48,67 @@ describe("MessageBubble", () => {
     const bubble = screen.getByTestId("message-bubble-system");
     expect(bubble).toHaveClass("message-bubble-component--system");
     expect(bubble).toHaveTextContent("Dataset replaced");
+  });
+});
+
+describe("MessageBubble — copy button", () => {
+  beforeEach(() => {
+    Object.assign(navigator, {
+      clipboard: { writeText: jest.fn().mockResolvedValue(undefined) },
+    });
+    jest.useFakeTimers();
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it("shows copy button on agent messages", () => {
+    render(
+      <MessageBubble message={makeMessage({ role: "agent", content: "Answer." })} />,
+    );
+    expect(screen.getByRole("button", { name: "Copy message" })).toBeInTheDocument();
+  });
+
+  it("does not show copy button on user messages", () => {
+    render(
+      <MessageBubble message={makeMessage({ role: "user", content: "Question?" })} />,
+    );
+    expect(screen.queryByRole("button", { name: "Copy message" })).not.toBeInTheDocument();
+  });
+
+  it("does not show copy button on system messages", () => {
+    render(
+      <MessageBubble message={makeMessage({ role: "system", content: "Uploaded." })} />,
+    );
+    expect(screen.queryByRole("button", { name: "Copy message" })).not.toBeInTheDocument();
+  });
+
+  it("copies message content to clipboard when clicked", async () => {
+    render(
+      <MessageBubble message={makeMessage({ role: "agent", content: "The answer is 42." })} />,
+    );
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy message" }));
+    });
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith("The answer is 42.");
+  });
+
+  it("shows checkmark after copying and resets after 1.5s", async () => {
+    render(
+      <MessageBubble message={makeMessage({ role: "agent", content: "Done." })} />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Copy message" }));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("CheckIcon")).toBeInTheDocument();
+    });
+
+    act(() => jest.advanceTimersByTime(1500));
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("CheckIcon")).not.toBeInTheDocument();
+    });
   });
 });
