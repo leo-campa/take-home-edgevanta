@@ -6,11 +6,12 @@ export type Message = {
   timestamp: number;
 };
 
-export type SseEvent =
-  | { type: "token"; content: string }
-  | { type: "done" }
-  | { type: "error"; message: string }
-  | { type: "no_data"; message: string };
+export type SseTokenEvent = { type: "token"; content: string };
+export type SseDoneEvent = { type: "done" };
+export type SseErrorEvent = { type: "error"; message: string };
+export type SseNoDataEvent = { type: "no_data"; message: string };
+
+export type SseEvent = SseTokenEvent | SseDoneEvent | SseErrorEvent | SseNoDataEvent;
 
 export type ChatState = {
   messages: Message[];
