@@ -72,7 +72,7 @@ The vision fallback is capped at 50 pages per ingestion session (50 × ~10 s ≈
 ## What I'd Change With More Time
 
 - **Streaming ingestion progress** — PDF ingest blocks for minutes on large scanned files. SSE progress events during extraction would make the experience significantly better.
-- **Persistent vector store** — the in-memory store is lost on server restart. A real vector DB (pgvector, Pinecone) would make it production-viable.
+- **Persistent vector store** — the in-memory store is lost on server restart. A real vector DB (pgvector, Pinecone, Weaviate) would make embeddings durable and scalable across restarts and multiple instances.
+- **Object storage for uploaded files** — uploaded CSVs and PDFs are saved to local directories (`uploads/`, `uploads-pdf/`) which are lost on redeploy. S3-compatible object storage would make files durable, independently scalable, and accessible across instances.
 - **Chunk overlap** — current chunking has no overlap between adjacent sections, which hurts recall on questions that span section boundaries.
 - **MCP server** — the tools API is halfway to an MCP-compatible interface. A full MCP implementation would let any MCP-compatible client connect directly without a custom integration.
-- **Test coverage for the tools endpoints** — `GET /api/tools` and `POST /api/tools/invoke` currently have no automated tests.
