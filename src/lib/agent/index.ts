@@ -304,7 +304,10 @@ export async function runAgent(
     { role: "user", content: question },
   ];
 
-  while (true) {
+  const MAX_ITERATIONS = 15;
+  let iterations = 0;
+
+  while (iterations++ < MAX_ITERATIONS) {
     const response = await client.messages.create({
       model: MODEL,
       max_tokens: 4096,
